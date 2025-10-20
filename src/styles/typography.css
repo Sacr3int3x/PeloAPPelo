@@ -1,0 +1,59 @@
+/* Estilos de tipografía y texto */
+.h1 {
+  font-size: 30px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: #1e293b;
+}
+
+.h1.tight {
+  margin-top: 6px;
+}
+
+.h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 8px 0 10px;
+}
+
+.form-section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.25rem;
+}
+
+.label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #334155;
+}
+
+.copy {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.muted {
+  color: #6b7280;
+}
+
+.link {
+  color: #0284c7;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #0369a1;
+}
+
+/* Subtítulos y textos explicativos */
+.publish-subtitle {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
+  font-weight: normal;
+}

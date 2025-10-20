@@ -1,0 +1,11 @@
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-text {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin-left: 4px;
+}

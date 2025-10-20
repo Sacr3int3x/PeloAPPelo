@@ -1,0 +1,89 @@
+.hero {
+  margin-bottom: clamp(24px, 6vw, 48px);
+}
+
+.hero-scroll {
+  display: flex;
+  gap: clamp(12px, 4vw, 20px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hero-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-box {
+  min-width: 90%;
+  scroll-snap-align: start;
+  border-radius: var(--radius-lg);
+  padding: clamp(20px, 6vw, 32px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .hero-box {
+    min-width: 60%;
+  }
+}
+
+.hero-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.hero-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+}
+
+.hero-text {
+  color: var(--color-text-muted);
+  max-width: 480px;
+  margin: 0;
+}
+
+.hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.hero-dot {
+  width: 16px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  border: none;
+  transition:
+    transform var(--transition-base),
+    background var(--transition-base);
+  cursor: pointer;
+}
+
+.hero-dot.active {
+  background: var(--color-primary);
+  transform: scaleX(1.4);
+}

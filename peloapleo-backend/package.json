@@ -1,34 +1,18 @@
 {
-  "name": "peloapelo-backend",
-  "version": "0.1.0",
+  "name": "peloapleo-backend",
+  "version": "1.0.0",
+  "description": "Backend API for the PeloAPelo marketplace app.",
   "type": "module",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
-    "prisma:gen": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:studio": "prisma studio",
-    "seed": "node prisma/seed.js"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
   },
-  "dependencies": {
-    "@prisma/client": "^5.19.0",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1"
-  },
-  "devDependencies": {
-    "@types/node": "^24.8.1",
-    "nodemon": "^3.1.4",
-    "prisma": "^5.22.0",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
-  },
-  "description": "",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "MIT",
+  "dependencies": {
+    "multer": "^2.0.2",
+    "ws": "^8.18.0"
+  }
 }

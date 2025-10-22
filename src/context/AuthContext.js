@@ -1,117 +1,166 @@
 import React, {
   createContext,
-  useContext,
-  useState,
-  useMemo,
   useCallback,
+  useContext,
   useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from "react";
-import { read, write } from "../utils/helpers";
+import { apiRequest } from "../services/api";
+import { realtime } from "../services/realtime";
 import { LS } from "../utils/constants";
 
 const AuthCtx = createContext(null);
 
 export const useAuth = () => useContext(AuthCtx);
 
+function readStoredUser() {
+  try {
+    const raw = localStorage.getItem(LS.user);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => read(LS.user, null));
-  const [users, setUsers] = useState(() => read(LS.users, []));
+  const [token, setToken] = useState(() => localStorage.getItem(LS.token));
+  const [user, setUser] = useState(() => readStoredUser());
+  const [loading, setLoading] = useState(() => Boolean(token) && !user);
+  const initRequested = useRef(false);
+
+  const persistSession = useCallback((nextUser, nextToken) => {
+    setUser(nextUser);
+    setToken(nextToken);
+    if (nextToken) localStorage.setItem(LS.token, nextToken);
+    else localStorage.removeItem(LS.token);
+    if (nextUser) localStorage.setItem(LS.user, JSON.stringify(nextUser));
+    else localStorage.removeItem(LS.user);
+  }, []);
 
   useEffect(() => {
-    write(LS.users, users);
-  }, [users]);
+    if (!token || user || initRequested.current) return;
+    initRequested.current = true;
+    let active = true;
+    (async () => {
+      try {
+        const response = await apiRequest("/auth/me", { token });
+        if (active) {
+          persistSession(response.user, token);
+        }
+      } catch (error) {
+        console.warn("Fallo obteniendo sesión", error);
+        if (active) {
+          persistSession(null, null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [token, user, persistSession]);
+
+  useEffect(() => {
+    realtime.start();
+    return () => {
+      realtime.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    realtime.setToken(token);
+  }, [token]);
 
   const login = useCallback(
-    ({ identifier, password }) => {
-      const normalizedId = identifier.trim().toLowerCase();
-      const record = users.find(
-        (u) => u.email === normalizedId || u.username === normalizedId,
-      );
-      if (!record) {
+    async ({ identifier, password }) => {
+      try {
+        const response = await apiRequest("/auth/login", {
+          method: "POST",
+          data: { identifier, password },
+        });
+        persistSession(response.user, response.token);
+        return { success: true, user: response.user };
+      } catch (error) {
         return {
           success: false,
-          error: "No encontramos una cuenta con esos datos.",
+          error: error?.message || "No se pudo iniciar sesión.",
         };
       }
-      if (record.password !== password) {
-        return { success: false, error: "Clave incorrecta." };
-      }
-      const profile = {
-        email: record.email,
-        name: record.name,
-        location: record.location,
-        since: record.since,
-        username: record.username,
-        phone: record.phone,
-      };
-      setUser(profile);
-      write(LS.user, profile);
-      return { success: true, user: profile };
     },
-    [users],
+    [persistSession],
   );
 
   const register = useCallback(
-    ({ email, password, name, location, username, phone }) => {
-      const normalizedEmail = email.trim().toLowerCase();
-      if (users.some((u) => u.email === normalizedEmail)) {
+    async ({ email, password, name, location, username, phone }) => {
+      try {
+        const response = await apiRequest("/auth/register", {
+          method: "POST",
+          data: { email, password, name, location, username, phone },
+        });
+        persistSession(response.user, response.token);
+        return { success: true, user: response.user };
+      } catch (error) {
         return {
           success: false,
-          error: "Ya existe una cuenta registrada con este correo.",
+          error: error?.message || "No se pudo completar el registro.",
         };
       }
-      const normalizedUsername = (username || "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "");
-      if (!normalizedUsername) {
-        return {
-          success: false,
-          error: "Escoge un nombre de usuario.",
-        };
-      }
-      if (users.some((u) => u.username === normalizedUsername)) {
-        return {
-          success: false,
-          error: "Ese nombre de usuario ya está en uso.",
-        };
-      }
-      const providedName = (name || "").trim();
-      const displayName =
-        providedName || normalizedEmail.split("@")[0] || "Usuario";
-      const record = {
-        email: normalizedEmail,
-        password,
-        name: displayName,
-        location,
-        since: new Date().toISOString(),
-        username: normalizedUsername,
-        phone: phone?.trim() || "",
-      };
-      const profile = {
-        email: record.email,
-        name: record.name,
-        location: record.location,
-        since: record.since,
-        username: record.username,
-        phone: record.phone,
-      };
-      setUsers((prev) => [...prev, record]);
-      setUser(profile);
-      write(LS.user, profile);
-      return { success: true, user: profile };
     },
-    [users],
+    [persistSession],
   );
 
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem(LS.user);
-  }, []);
+  const logout = useCallback(async () => {
+    if (!token) {
+      persistSession(null, null);
+      return;
+    }
+    try {
+      await apiRequest("/auth/logout", {
+        method: "POST",
+        token,
+      });
+    } catch (error) {
+      console.warn("Error cerrando sesión", error);
+    } finally {
+      persistSession(null, null);
+    }
+  }, [token, persistSession]);
+
+  const refresh = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await apiRequest("/auth/me", { token });
+      persistSession(response.user, token);
+      return { success: true };
+    } catch (error) {
+      console.error("Error actualizando datos del usuario:", error);
+      if (error?.status === 401) {
+        persistSession(null, null);
+      }
+      return {
+        success: false,
+        error:
+          error?.message || "No se pudo actualizar la información del usuario",
+      };
+    }
+  }, [token, persistSession]);
 
   const value = useMemo(
-    () => ({ user, login, logout, register }),
-    [user, login, logout, register],
+    () => ({
+      user,
+      token,
+      loading,
+      login,
+      register,
+      logout,
+      refresh,
+    }),
+    [user, token, loading, login, register, logout, refresh],
   );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

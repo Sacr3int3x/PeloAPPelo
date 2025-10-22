@@ -167,7 +167,7 @@ function HomePage() {
 
         <Hero />
         <CategoryChipsNav />
-        <LatestItems limit={24} shuffleSeed={shuffleSeed} />
+        <LatestItems limit={30} shuffleSeed={shuffleSeed} />
       </div>
     </main>
   );

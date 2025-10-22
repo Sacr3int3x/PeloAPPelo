@@ -7,6 +7,7 @@ export const LS = {
   views: "pp_views",
   searches: "pp_searches",
   messages: "pp_messages",
+  token: "pp_token",
 };
 
 // Catálogo de productos por categoría

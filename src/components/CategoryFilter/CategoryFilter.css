@@ -3,15 +3,14 @@
   top: 64px;
   z-index: 20;
   background: var(--color-surface);
-  padding: 12px 0;
+  padding: 10px clamp(12px, 4vw, 24px);
   border-bottom: 1px solid var(--color-border);
 }
 
 .category-filter-scroll {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
-  padding: 0 clamp(12px, 3vw, 24px);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -21,13 +20,12 @@
 }
 
 .category-filter-item {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--font-size-sm);
@@ -36,16 +34,13 @@
   transition:
     border-color var(--transition-base),
     background var(--transition-base),
-    color var(--transition-base),
-    transform var(--transition-base);
+    color var(--transition-base);
   cursor: pointer;
-  min-width: 92px;
 }
 
 .category-filter-item:hover {
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
-  transform: translateY(-2px);
 }
 
 .category-filter-item.active {
@@ -55,11 +50,7 @@
   font-weight: 600;
 }
 
-.category-filter-icon {
-  font-size: 1.5rem;
-}
-
 .category-filter-label {
-  font-size: var(--font-size-xs);
-  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
 }

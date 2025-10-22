@@ -1,0 +1,61 @@
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  background-color: #ff3b3b;
+  border-radius: 9999px;
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 2px 4px rgba(255, 59, 59, 0.15);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0 4px;
+  animation: badgePulse 2s infinite;
+}
+
+.badge-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  background-color: #ff3b3b;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(255, 59, 59, 0.15);
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(255, 59, 59, 0.15);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(255, 59, 59, 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(255, 59, 59, 0.15);
+  }
+
+.message-new {
+  animation: highlight 2s ease-out;
+}
+
+@keyframes highlight {
+  0% {
+    background-color: rgba(16, 137, 198, 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}

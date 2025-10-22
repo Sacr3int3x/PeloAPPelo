@@ -11,8 +11,9 @@ export function FavButton({ id, size = 22 }) {
   const nav = useNavigate();
   const loc = useLocation();
   const active = isFav(id);
+  const [pending, setPending] = React.useState(false);
 
-  const onClick = (e) => {
+  const onClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
@@ -20,7 +21,13 @@ export function FavButton({ id, size = 22 }) {
       nav(`/login?next=${next}`);
       return;
     }
-    toggleFav(id);
+    if (pending) return;
+    setPending(true);
+    const result = await toggleFav(id);
+    if (!result?.success && result?.error) {
+      console.error(result.error);
+    }
+    setPending(false);
   };
 
   return (
@@ -29,6 +36,7 @@ export function FavButton({ id, size = 22 }) {
       onClick={onClick}
       className={"favbtn" + (active ? " active" : "")}
       aria-label={active ? "Quitar de favoritos" : "Agregar a favoritos"}
+      disabled={pending}
     >
       <MdFavorite size={size} aria-hidden />
     </button>
@@ -40,36 +48,36 @@ export default function Card({ item, viewMode = "grid" }) {
   return (
     <Link
       to={`/item/${item.id}`}
-      className={`card card--compact ${layoutClass}`}
+      className={`card card--compact shadow ${layoutClass}`}
       data-view={viewMode}
+      role="article"
+      aria-labelledby={`card-title-${item.id}`}
     >
       <div className="card-content">
-        <figure className="card-media">
+        <figure className="card-media" role="img" aria-label={item.name}>
           <img
             src={item.images?.[0] || "/images/placeholder.jpg"}
             alt={item.name}
             className="card-img"
             loading="lazy"
           />
-          <div className="card-fav">
+          <div className="card-fav" role="presentation">
             <FavButton id={item.id} />
           </div>
-          <div className="card-badge">
+          <div className="card-badge" role="status" aria-live="polite">
             {item.status === "active" ? "Disponible" : "Vendido"}
           </div>
         </figure>
-        <div className="card-body">
-          <div className="card-category">{item.category}</div>
-          <h3 className="card-title">{item.name}</h3>
-          <div className="card-location">
-            <span className="location-icon">📍</span>
-            {item.location}
-          </div>
-          <div className="card-price">
+        <div className="card-body card-body--compact">
+          <h3 className="card-title" title={item.name}>
+            {item.name}
+          </h3>
+          <div
+            className="card-price"
+            title={`REF ${item.price?.toLocaleString()}`}
+          >
             <span className="price-label">REF</span>
-            <span className="price-amount">
-              {item.price?.toLocaleString()}
-            </span>
+            <span className="price-amount">{item.price?.toLocaleString()}</span>
           </div>
         </div>
       </div>

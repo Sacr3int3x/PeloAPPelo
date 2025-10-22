@@ -21,24 +21,10 @@ export default function CategoryFilter({
             }`}
             onClick={() => handleCategoryClick(category)}
           >
-            <div className="category-filter-icon">
-              {getCategoryIcon(category)}
-            </div>
             <span className="category-filter-label">{category}</span>
           </button>
         ))}
       </div>
     </div>
   );
-}
-
-function getCategoryIcon(category) {
-  const icons = {
-    Vehículos: "🚗",
-    Celulares: "📱",
-    Electrónica: "💻",
-    Muebles: "🪑",
-    Otros: "📦",
-  };
-  return icons[category] || "📦";
 }

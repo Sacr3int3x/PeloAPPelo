@@ -1,0 +1,348 @@
+{
+  "users": [
+    {
+      "id": "usr_ana_demo",
+      "email": "ana@demo.com",
+      "username": "anademo",
+      "name": "Ana Demo",
+      "location": "Caracas",
+      "phone": "+58 412-0000000",
+      "passwordHash": "d3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791",
+      "since": "2024-01-10T12:00:00.000Z",
+      "createdAt": "2024-01-10T12:00:00.000Z",
+      "updatedAt": "2025-10-22T06:38:59.605Z",
+      "avatar": "/uploads/profiles/usr_ana_demo/profile-1761115139602.jpeg"
+    },
+    {
+      "id": "usr_luis_demo",
+      "email": "luis@demo.com",
+      "username": "luisdemo",
+      "name": "Luis Demo",
+      "location": "Maracaibo",
+      "phone": "+58 414-1111111",
+      "passwordHash": "d3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791",
+      "since": "2024-01-15T15:00:00.000Z",
+      "createdAt": "2024-01-15T15:00:00.000Z",
+      "updatedAt": "2024-01-15T15:00:00.000Z"
+    },
+    {
+      "id": "usr_4dcdd45c919a44c7",
+      "email": "aubiedag@gmail.com",
+      "username": "sacr3int3",
+      "name": "Anibal Augusto Ubieda Garban",
+      "location": "Miranda",
+      "phone": "4141123707",
+      "passwordHash": "b2cfba8b383abbb8e12d114dc8dc5cfa3b19e74e71b2cdd259e150bdfedd55cf",
+      "since": "2025-10-21T17:41:28.402Z",
+      "createdAt": "2025-10-21T17:41:28.402Z",
+      "updatedAt": "2025-10-22T06:41:34.336Z",
+      "role": "admin",
+      "avatar": "/uploads/profiles/usr_4dcdd45c919a44c7/profile-1761115294335.jpeg"
+    },
+    {
+      "id": "usr_6e6b67c1088e471d",
+      "email": "prueba@gmail.com",
+      "username": "prueba1",
+      "name": "Prueba 1",
+      "location": "Amazonas",
+      "phone": "0414 1123707",
+      "passwordHash": "4bfd5ffa55e08317d539cd235e68eb800b2451f00889a1d07c4cf9071b5a05fc",
+      "since": "2025-10-21T17:43:44.628Z",
+      "createdAt": "2025-10-21T17:43:44.628Z",
+      "updatedAt": "2025-10-21T17:43:44.628Z"
+    }
+  ],
+  "listings": [
+    {
+      "id": "lst_c23e7ef25c97458d",
+      "ownerId": "usr_ana_demo",
+      "category": "Vehículo",
+      "name": "casjdlaskdaslkjdlkasj laskdj lkasjdl akjsdlkj dalskjd laskjd",
+      "brand": "Toyota",
+      "model": "Fortuner",
+      "location": "Caracas",
+      "price": 9000,
+      "images": [
+        "/uploads/listings/lst_c23e7ef25c97458d_0_1761096832318.jpg"
+      ],
+      "description": "jksaljdlkasjdlaskjd aslkjd asdka ;ksjd a;ksljdh lkA GSDliahklja shdlak sda yilusd hlasjh dl;sajkjhdlashdlias li as dhlaksj hklasjhd lkas dklash dlkash dlkasjhd. akslhd alksjh d lakshj dlkjasd klasjhd kash dklash dkl ashdkashdksajhdlkjashd laksj lkasd ahsdkljhaslkdh lqwydiluqghd ;qhlo quu h;oqwhu x;oqish oqwhw ihqwiuh d;owquh o;qhw;o uiwqhd ;oqwho; dwq;ho idhqwo; hoqw;ih do;uqwhd ;oqwih do;iqwh jsh",
+      "status": "active",
+      "plan": "premium",
+      "createdAt": "2025-10-22T01:33:52.305Z",
+      "updatedAt": "2025-10-22T01:33:52.305Z"
+    },
+    {
+      "id": "lst_8e8a59684ade43d9",
+      "ownerId": "usr_4dcdd45c919a44c7",
+      "category": "Celular",
+      "name": "Iphone X",
+      "brand": "Apple",
+      "model": "iPhone 14",
+      "location": "Miranda",
+      "price": 200,
+      "images": [
+        "/uploads/listings/lst_8e8a59684ade43d9_0_1761071944345.jpg"
+      ],
+      "description": "sin detalles",
+      "status": "active",
+      "plan": "plus",
+      "createdAt": "2025-10-21T18:39:04.337Z",
+      "updatedAt": "2025-10-22T04:27:03.785Z"
+    },
+    {
+      "id": "lst_be8bc32f64f6424a",
+      "ownerId": "usr_6e6b67c1088e471d",
+      "category": "Vehículo",
+      "name": "Corolla como nuevo 2005",
+      "brand": "Toyota",
+      "model": "Corolla",
+      "location": "Amazonas",
+      "price": 8000,
+      "images": [
+        "/uploads/listings/lst_be8bc32f64f6424a_0_1761068692949.jpg",
+        "/uploads/listings/lst_be8bc32f64f6424a_1_1761068692952.png",
+        "/uploads/listings/lst_be8bc32f64f6424a_2_1761068692960.png"
+      ],
+      "description": "sin detalles como nuevo ",
+      "status": "paused",
+      "plan": "gratis",
+      "createdAt": "2025-10-21T17:44:52.940Z",
+      "updatedAt": "2025-10-21T17:51:09.817Z"
+    },
+    {
+      "id": "lst_corolla_2020",
+      "ownerId": "usr_ana_demo",
+      "category": "Vehículo",
+      "name": "Toyota Corolla 2020",
+      "brand": "Toyota",
+      "model": "Corolla",
+      "location": "Caracas",
+      "price": 9500,
+      "images": [
+        "/images/demo/car1.jpg",
+        "/images/demo/car2.jpg",
+        "/images/demo/car3.jpg"
+      ],
+      "description": "Único dueño, mantenimientos al día. Tapicería impecable, cauchos nuevos.",
+      "status": "active",
+      "plan": "premium",
+      "createdAt": "2024-04-20T10:00:00.000Z",
+      "updatedAt": "2024-04-20T10:00:00.000Z"
+    },
+    {
+      "id": "lst_iphone13_128",
+      "ownerId": "usr_luis_demo",
+      "category": "Celular",
+      "name": "iPhone 13 128GB",
+      "brand": "Apple",
+      "model": "iPhone 13",
+      "location": "Maracaibo",
+      "price": 650,
+      "images": [
+        "/images/demo/iphone13pro.jpg",
+        "/images/demo/phone2.jpg"
+      ],
+      "description": "Batería 90% — excelente estado. Incluye caja y cargador.",
+      "status": "active",
+      "plan": "plus",
+      "createdAt": "2024-05-01T09:30:00.000Z",
+      "updatedAt": "2024-05-01T09:30:00.000Z"
+    }
+  ],
+  "favorites": [
+    {
+      "id": "fav_luis_corolla",
+      "userId": "usr_luis_demo",
+      "listingId": "lst_corolla_2020",
+      "createdAt": "2024-05-02T12:00:00.000Z"
+    },
+    {
+      "id": "fav_c9e49c8c65af46cd",
+      "userId": "usr_4dcdd45c919a44c7",
+      "listingId": "lst_iphone13_128",
+      "createdAt": "2025-10-21T17:41:37.299Z"
+    },
+    {
+      "id": "fav_893dd5ceb4de4809",
+      "userId": "usr_6e6b67c1088e471d",
+      "listingId": "lst_be8bc32f64f6424a",
+      "createdAt": "2025-10-21T18:07:45.433Z"
+    },
+    {
+      "id": "fav_9fa37645a84d44f8",
+      "userId": "usr_ana_demo",
+      "listingId": "lst_8e8a59684ade43d9",
+      "createdAt": "2025-10-22T14:23:46.527Z"
+    }
+  ],
+  "conversations": [],
+  "blocked": [
+    {
+      "id": "blk_e0d2a18a39964391",
+      "ownerId": "usr_4dcdd45c919a44c7",
+      "targetId": "usr_ana_demo",
+      "createdAt": "2025-10-22T19:20:08.794Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "sess_47122f517067435b",
+      "token": "8GqJWq7SwOzA95nhS8bYO2xzDYu9ODI82crfA_Z8Yfk",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-10-21T17:41:28.414Z",
+      "expiresAt": "2025-10-28T17:41:28.413Z"
+    },
+    {
+      "id": "sess_2313dae01d8a4258",
+      "token": "O3KqfYkbD5WQmR639KrArG0nq5nRvkdtvMU0dFGl7t4",
+      "userId": "usr_6e6b67c1088e471d",
+      "createdAt": "2025-10-21T17:43:44.636Z",
+      "expiresAt": "2025-10-28T17:43:44.636Z"
+    },
+    {
+      "id": "sess_fce9a54f77504b3f",
+      "token": "_teukXdldbO5iwK4RHKXFwFV1JoVCZGRH3DHcNVDZlE",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-10-21T18:20:24.307Z",
+      "expiresAt": "2025-10-28T18:20:24.306Z"
+    },
+    {
+      "id": "sess_91d4712c7e644528",
+      "token": "hcNZiBM_jSIBMEY8N87BZo0MSop6rg_wHpxWHT7-UlA",
+      "userId": "usr_ana_demo",
+      "createdAt": "2025-10-21T18:26:16.152Z",
+      "expiresAt": "2025-10-28T18:26:16.151Z"
+    },
+    {
+      "id": "sess_2c72a373579c4da5",
+      "token": "wjwnyWcveHxu4uGJnolB3ljeTJOgI7CcjO4F_lgsaQE",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-10-21T19:10:07.463Z",
+      "expiresAt": "2025-10-28T19:10:07.462Z"
+    },
+    {
+      "id": "sess_be4105a4c71142dc",
+      "token": "9mLbNx5-aeC5wBKmtyHewwfOxG3ubQn8jYBv7kPS1Gk",
+      "userId": "usr_ana_demo",
+      "createdAt": "2025-10-21T19:11:14.908Z",
+      "expiresAt": "2025-10-28T19:11:14.907Z"
+    },
+    {
+      "id": "sess_58fdc08cc5e14554",
+      "token": "DD8XlFYPqwk-f6jepsgneyM8lrUHvhireREH50e1bkM",
+      "userId": "usr_ana_demo",
+      "createdAt": "2025-10-21T19:30:19.647Z",
+      "expiresAt": "2025-10-28T19:30:19.646Z"
+    },
+    {
+      "id": "sess_ab85f6646f7a4349",
+      "token": "z78QQOpq57_QHUXeNTQEdhoPU03kKbS9FPcnbA7-GTs",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-10-21T19:48:55.329Z",
+      "expiresAt": "2025-10-28T19:48:55.328Z"
+    },
+    {
+      "id": "sess_e3e187b3f93a4461",
+      "token": "7ORwf78nCIhokTp0AX7rWLkYsgPOSOhb2qnkUPSZI3I",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-10-21T23:09:41.420Z",
+      "expiresAt": "2025-10-28T23:09:41.420Z"
+    },
+    {
+      "id": "sess_d5643e8174654d53",
+      "token": "8FWKJhkY6dRKgCtAKuYkdQfOS2GGTUNeb8oQPZEl5X8",
+      "userId": "usr_ana_demo",
+      "createdAt": "2025-10-22T21:09:53.049Z",
+      "expiresAt": "2025-10-29T21:09:53.049Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "aud_00337667254f4b8d",
+      "userId": "usr_ana_demo",
+      "action": "user.update",
+      "targetType": "user",
+      "targetId": "usr_4dcdd45c919a44c7",
+      "details": {
+        "name": "Anibal Augusto Ubieda Garban",
+        "location": "Miranda",
+        "phone": "4141123707",
+        "role": "admin"
+      },
+      "createdAt": "2025-10-21T19:48:37.879Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx_0ba88374a13d4b4b",
+      "conversationId": "cnv_ce0b828d07544b16",
+      "listingId": "lst_8e8a59684ade43d9",
+      "sellerId": "usr_4dcdd45c919a44c7",
+      "buyerId": "usr_ana_demo",
+      "status": "completed",
+      "createdAt": "2025-10-22T02:14:33.503Z",
+      "updatedAt": "2025-10-22T02:15:27.813Z",
+      "sellerRatingId": "rep_62763d973df2442d",
+      "buyerRatingId": "rep_b9cbe8beb6b64c59"
+    },
+    {
+      "id": "tx_1b1942806a9e443b",
+      "conversationId": "cnv_4da44f38438443c4",
+      "listingId": "lst_8e8a59684ade43d9",
+      "sellerId": "usr_4dcdd45c919a44c7",
+      "buyerId": "usr_ana_demo",
+      "status": "completed",
+      "createdAt": "2025-10-22T03:52:36.148Z",
+      "updatedAt": "2025-10-22T03:52:48.686Z",
+      "sellerRatingId": "rep_a12e3faeb72c4f75",
+      "buyerRatingId": null
+    },
+    {
+      "id": "tx_a12643d3971342d1",
+      "conversationId": "cnv_abf40b2c7d6a4632",
+      "listingId": "lst_8e8a59684ade43d9",
+      "sellerId": "usr_4dcdd45c919a44c7",
+      "buyerId": "usr_ana_demo",
+      "status": "completed",
+      "createdAt": "2025-10-22T04:26:35.595Z",
+      "updatedAt": "2025-10-22T04:26:35.595Z",
+      "sellerRatingId": null,
+      "buyerRatingId": null
+    }
+  ],
+  "reputations": [
+    {
+      "id": "rep_62763d973df2442d",
+      "transactionId": "tx_0ba88374a13d4b4b",
+      "conversationId": "cnv_ce0b828d07544b16",
+      "listingId": "lst_8e8a59684ade43d9",
+      "fromUserId": "usr_4dcdd45c919a44c7",
+      "toUserId": "usr_ana_demo",
+      "rating": 5,
+      "comment": "Excelente todo rapido y seguro",
+      "createdAt": "2025-10-22T02:14:57.176Z"
+    },
+    {
+      "id": "rep_b9cbe8beb6b64c59",
+      "transactionId": "tx_0ba88374a13d4b4b",
+      "conversationId": "cnv_ce0b828d07544b16",
+      "listingId": "lst_8e8a59684ade43d9",
+      "fromUserId": "usr_ana_demo",
+      "toUserId": "usr_4dcdd45c919a44c7",
+      "rating": 5,
+      "comment": "seguro y recomendado",
+      "createdAt": "2025-10-22T02:15:27.813Z"
+    },
+    {
+      "id": "rep_a12e3faeb72c4f75",
+      "transactionId": "tx_1b1942806a9e443b",
+      "conversationId": "cnv_4da44f38438443c4",
+      "listingId": "lst_8e8a59684ade43d9",
+      "fromUserId": "usr_4dcdd45c919a44c7",
+      "toUserId": "usr_ana_demo",
+      "rating": 5,
+      "comment": "todo bien",
+      "createdAt": "2025-10-22T03:52:48.686Z"
+    }
+  ]
+}

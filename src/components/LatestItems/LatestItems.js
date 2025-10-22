@@ -26,7 +26,7 @@ const shuffleBySeed = (source, seed) => {
   return arr;
 };
 
-function LatestItemsContent({ limit = 24, shuffleSeed }) {
+function LatestItemsContent({ limit = 24, shuffleSeed = null }) {
   const data = useData();
   const items = data?.items;
   const latest = useMemo(() => {

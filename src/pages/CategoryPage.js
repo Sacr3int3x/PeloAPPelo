@@ -6,6 +6,7 @@ import { catFromSlug, catSlug } from "../utils/categories";
 import CategoryFilter from "../components/CategoryFilter/CategoryFilter";
 import Card from "../components/Card/Card";
 import FilterSheet from "../components/FilterSheet/FilterSheet";
+import { HiOutlineArrowLeft, HiOutlineAdjustments } from "react-icons/hi";
 import Select from "../components/Select/Select";
 import "../styles/CategoryPage.css";
 
@@ -18,9 +19,11 @@ function CategoryPage() {
   const [location, setLocation] = useState("");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
+  const [condition, setCondition] = useState("");
   const [sort, setSort] = useState("new");
   const [openSheet, setOpenSheet] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const categories = [
     "Vehículos",
@@ -90,6 +93,12 @@ function CategoryPage() {
     if (location) arr = arr.filter((x) => x.location === location);
     if (brand) arr = arr.filter((x) => x.brand === brand);
     if (model) arr = arr.filter((x) => x.model === model);
+    if (condition) {
+      const cond = condition.toLowerCase();
+      arr = arr.filter(
+        (x) => (x.condition || "usado").toLowerCase() === cond,
+      );
+    }
 
     // Ordenamiento
     switch (sort) {
@@ -104,7 +113,7 @@ function CategoryPage() {
       default:
         return arr;
     }
-  }, [base, location, brand, model, sort]);
+  }, [base, location, brand, model, condition, sort]);
 
   // Resetear modelo al cambiar marca
   useEffect(() => setModel(""), [brand]);
@@ -115,8 +124,14 @@ function CategoryPage() {
     setBrand("");
     setModel("");
     setSort("new");
+    setCondition("");
     setViewMode("grid");
+    setVisibleCount(20);
   }, [slug]);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [location, brand, model, condition, sort]);
 
   // Formulario de filtros
   const FiltersForm = (
@@ -140,6 +155,19 @@ function CategoryPage() {
         value={location}
         onChange={setLocation}
         options={[{ value: "", label: "Todas" }, ...locations.map((l) => ({ value: l, label: l }))]}
+        placeholder="Todas"
+      />
+
+      <Select
+        label="Condición"
+        name="filter_condition"
+        value={condition}
+        onChange={setCondition}
+        options={[
+          { value: "", label: "Todas" },
+          { value: "nuevo", label: "Nuevo" },
+          { value: "usado", label: "Usado" },
+        ]}
         placeholder="Todas"
       />
 
@@ -171,53 +199,27 @@ function CategoryPage() {
 
   return (
     <main className="container page">
-      {/* Header con back iOS y botón de filtros */}
-      <div className="page-header category-page-header">
+      {/* Header minimalista con título centrado y acciones laterales */}
+      <div className="category-header-bar">
         <button
-          className="btn icon page-nav-btn"
+          type="button"
+          className="btn icon page-nav-btn category-header-btn"
           onClick={() => {
             if (window.history.length > 1) navigate(-1);
             else navigate('/');
           }}
           aria-label="Volver"
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <polyline
-              points="15 18 9 12 15 6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <HiOutlineArrowLeft aria-hidden />
         </button>
-
-        <h1 className="page-title h1" style={{ margin: 0 }}>{label}</h1>
-
+        <h1 className="category-header-title">{label}</h1>
         <button
-          className="btn icon page-nav-btn"
+          type="button"
+          className="btn icon page-nav-btn category-header-btn"
           onClick={() => setOpenSheet(true)}
           aria-label="Filtros"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <line x1="7" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <line x1="11" y1="18" x2="21" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <HiOutlineAdjustments aria-hidden />
         </button>
       </div>
 
@@ -232,40 +234,38 @@ function CategoryPage() {
         }}
       />
 
-      <div className="category-toolbar">
-        <div className="category-toolbar-info">
-          {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
-        </div>
-        <div className="category-toolbar-actions">
-          <div className="view-toggle-group" role="group" aria-label="Cambiar vista">
-            <button
-              type="button"
-              className={`view-toggle ${viewMode === "grid" ? "active" : ""}`}
-              onClick={() => setViewMode("grid")}
-              aria-pressed={viewMode === "grid"}
-              aria-label="Vista en cuadrícula"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="3" width="7" height="7" />
-                <rect x="14" y="3" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className={`view-toggle ${viewMode === "list" ? "active" : ""}`}
-              onClick={() => setViewMode("list")}
-              aria-pressed={viewMode === "list"}
-              aria-label="Vista en lista"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1="4" y1="6" x2="20" y2="6" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="4" y1="18" x2="20" y2="18" />
-              </svg>
-            </button>
-          </div>
+      <div className="category-actions-bar">
+        <span className="category-count">
+          {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
+        </span>
+        <div className="view-toggle-group" role="group" aria-label="Cambiar vista">
+          <button
+            type="button"
+            className={`view-toggle ${viewMode === "grid" ? "active" : ""}`}
+            onClick={() => setViewMode("grid")}
+            aria-pressed={viewMode === "grid"}
+            aria-label="Vista en cuadrícula"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={`view-toggle ${viewMode === "list" ? "active" : ""}`}
+            onClick={() => setViewMode("list")}
+            aria-pressed={viewMode === "list"}
+            aria-label="Vista en lista"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="18" x2="20" y2="18" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -273,11 +273,24 @@ function CategoryPage() {
       <div className="category-content">
         <div className="products-grid">
           {filtered.length > 0 ? (
-            <div className={`grid-cards${viewMode === "list" ? " list-view" : ""}`}>
-              {filtered.map((item) => (
+            <>
+              <div className={`grid-cards${viewMode === "list" ? " list-view" : ""}`}>
+              {filtered.slice(0, visibleCount).map((item) => (
                 <Card key={item.id} item={item} viewMode={viewMode} />
               ))}
-            </div>
+              </div>
+              {visibleCount < filtered.length && (
+                <div className="category-load-more">
+                  <button
+                    type="button"
+                    className="btn outline"
+                    onClick={() => setVisibleCount((prev) => prev + 20)}
+                  >
+                    Ver más resultados
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="no-results">
               <p>No se encontraron productos en esta categoría</p>

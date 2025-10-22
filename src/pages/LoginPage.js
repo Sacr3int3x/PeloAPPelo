@@ -14,20 +14,23 @@ function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   useEffect(() => {
     if (user) nav(next);
   }, [user, nav, next]);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!identifier.trim() || !password) {
       setError("Ingresa tu usuario o correo y tu clave.");
       return;
     }
-    const result = login({ identifier, password });
+    setSubmitting(true);
+    const result = await login({ identifier, password });
+    setSubmitting(false);
     if (!result?.success) {
       setError(result?.error || "No se pudo iniciar sesión.");
       return;
@@ -38,11 +41,7 @@ function LoginPage() {
     <main className="container page auth-page">
       <div className="auth-card">
         <header className="auth-header">
-          <div className="auth-logo" aria-hidden>
-            <span className="auth-logo-symbol">⇄</span>
-            <span className="auth-logo-text">peloAPPelo</span>
-          </div>
-          <h1 className="auth-title">¡Hola de nuevo!</h1>
+          <h1 className="auth-title">Bienvenido de nuevo</h1>
           <p className="auth-subtitle">
             Inicia sesión para continuar tu experiencia de intercambio.
           </p>
@@ -70,7 +69,7 @@ function LoginPage() {
             </label>
             <input
               id="login-identifier"
-              className="auth-input"
+              className="input auth-input"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="Ingresa tu usuario o correo"
@@ -86,7 +85,7 @@ function LoginPage() {
             <div className="auth-input-wrapper">
               <input
                 id="login-password"
-                className="auth-input"
+                className="input auth-input"
                 type={passwordVisible ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -118,8 +117,8 @@ function LoginPage() {
             </div>
           )}
 
-          <button className="btn primary" type="submit">
-            Ingresar
+          <button className="btn primary block" type="submit" disabled={submitting}>
+            {submitting ? "Ingresando..." : "Ingresar"}
           </button>
         </form>
 

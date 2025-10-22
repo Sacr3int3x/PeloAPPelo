@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { MdChat, MdSwapHoriz } from "react-icons/md";
+import { MdFavorite } from "react-icons/md";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../context/MessageContext";
 import Rating from "../components/Rating/Rating";
 import { clamp, fmt } from "../utils/format";
+import BlockAlert from "../components/BlockAlert/BlockAlert";
 import "./ItemPage.css";
 
 function ItemPage() {
@@ -13,9 +14,10 @@ function ItemPage() {
   const nav = useNavigate();
   const loc = useLocation();
   const { byId, byOwner, isFav, toggleFav } = useData();
-  const { startConversation } = useMessages();
+  const { startConversation, blocked } = useMessages();
   const { id } = useParams();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [blockAlert, setBlockAlert] = useState(null);
 
   const item = byId(id);
   if (!item) return <main className="container page">No encontrado.</main>;
@@ -23,13 +25,29 @@ function ItemPage() {
   const images = (
     item.images?.length ? item.images : ["/images/placeholder.jpg"]
   ).slice(0, 6);
-  const ownerListings = byOwner(item.ownerEmail);
-  const reputation = clamp(3.8 + ownerListings.length * 0.05, 3.8, 5);
-  const sellerName = (item.ownerEmail || "usuario@demo.com").split("@")[0];
+  const sellerEmail = item.ownerEmail || "";
+  const ownerListings = sellerEmail ? byOwner(sellerEmail) : [];
+
+  // Manejo seguro de la reputación del vendedor
+  const ownerRating = item.ownerRating || {};
+  const ownerRatingAverage =
+    typeof ownerRating.average === "number" ? ownerRating.average : 0;
+  const ownerRatingCount =
+    typeof ownerRating.count === "number" ? ownerRating.count : 0;
+  const reputation = clamp(ownerRatingAverage, 0, 5);
+
+  // Información del vendedor con valores por defecto seguros
+  const sellerName = item.ownerName || sellerEmail?.split("@")[0] || "Vendedor";
+  const sellerUsername =
+    item.ownerUsername || sellerEmail?.split("@")[0] || "vendedor";
+
+  // Manejo de la URL del avatar
+  const defaultAvatar = "/images/avatars/default.svg";
+  const sellerAvatar = item.ownerAvatar || defaultAvatar;
   const isFavorite = isFav(item.id);
   const isOwner =
-    user?.email && item.ownerEmail
-      ? user.email.toLowerCase() === item.ownerEmail.toLowerCase()
+    user?.email && sellerEmail
+      ? user.email.toLowerCase() === sellerEmail.toLowerCase()
       : false;
   const planLabel = {
     premium: "Destacado Premium",
@@ -41,9 +59,13 @@ function ItemPage() {
     paused: "Pausado",
     sold: "Finalizado",
   };
+  const conditionLabel =
+    (item.condition || "usado").toLowerCase() === "nuevo" ? "Nuevo" : "Usado";
+  const publishedDate = item.createdAt ? new Date(item.createdAt) : null;
 
   return (
     <main className="container page item-page">
+      {blockAlert && <BlockAlert message={blockAlert} />}
       <div className="item-header-bar">
         <button
           type="button"
@@ -97,20 +119,9 @@ function ItemPage() {
             aria-label={
               isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
             }
+            aria-pressed={isFavorite}
           >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 14.5C19 17.5376 16.6904 20 13.75 20C11.9061 20 10.2796 18.9733 9.5 17.5C8.72042 18.9733 7.09395 20 5.25 20C2.30964 20 0 17.5376 0 14.5C0 8.21429 7.14286 4 9.5 2C11.8571 4 19 8.21429 19 14.5Z" transform="translate(2 2)" />
-            </svg>
+            <MdFavorite size={22} aria-hidden />
           </button>
         </div>
         {images.length > 1 && (
@@ -134,7 +145,8 @@ function ItemPage() {
           <div>
             <h1 className="item-title">{item.name}</h1>
             <p className="item-meta">
-              {item.category} · {item.location}
+              {item.category} ·{" "}
+              <span className="item-meta-location">{item.location}</span>
             </p>
           </div>
           <div className="item-price-tag">
@@ -147,7 +159,6 @@ function ItemPage() {
             )}
           </div>
         </div>
-        <Rating value={reputation} votes={100 + ownerListings.length * 7} />
       </section>
 
       <section className="panel item-section">
@@ -159,21 +170,31 @@ function ItemPage() {
           </div>
           <div className="item-spec">
             <span className="item-spec-label">Marca</span>
-            <span className="item-spec-value">{item.brand || "No indicado"}</span>
+            <span className="item-spec-value">
+              {item.brand || "No indicado"}
+            </span>
           </div>
           <div className="item-spec">
             <span className="item-spec-label">Modelo</span>
-            <span className="item-spec-value">{item.model || "No indicado"}</span>
+            <span className="item-spec-value">
+              {item.model || "No indicado"}
+            </span>
           </div>
           <div className="item-spec">
             <span className="item-spec-label">Ubicación</span>
-            <span className="item-spec-value">{item.location}</span>
+            <span className="item-spec-value item-spec-location">
+              {item.location}
+            </span>
           </div>
           <div className="item-spec">
             <span className="item-spec-label">Estado</span>
             <span className="item-spec-value">
               {statusLabel[item.status] || statusLabel.active}
             </span>
+          </div>
+          <div className="item-spec">
+            <span className="item-spec-label">Condición</span>
+            <span className="item-spec-value">{conditionLabel}</span>
           </div>
           <div className="item-spec">
             <span className="item-spec-label">Plan</span>
@@ -184,7 +205,9 @@ function ItemPage() {
           <div className="item-spec">
             <span className="item-spec-label">Publicado</span>
             <span className="item-spec-value">
-              {new Date(item.createdAt).toLocaleDateString()}
+              {publishedDate
+                ? publishedDate.toLocaleDateString()
+                : "No disponible"}
             </span>
           </div>
         </div>
@@ -193,17 +216,54 @@ function ItemPage() {
       <section className="panel item-section">
         <h2 className="item-section-title">Vendedor</h2>
         <div className="seller-card">
-          <div className="seller-avatar" aria-hidden>
-            {sellerName.charAt(0).toUpperCase()}
+          <div className="seller-photo-wrapper">
+            <img
+              src={sellerAvatar}
+              alt={`Perfil de ${sellerName}`}
+              className="seller-photo"
+              onError={(event) => {
+                console.log("Error cargando imagen:", sellerAvatar);
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = defaultAvatar;
+              }}
+              loading="lazy"
+            />
           </div>
           <div className="seller-info">
-            <div className="seller-name">{sellerName}</div>
-            <div className="seller-email">{item.ownerEmail}</div>
-            <Rating value={reputation} votes={100 + ownerListings.length * 7} />
+            <div className="seller-identity">
+              <span className="seller-name">{sellerName}</span>
+              <span className="seller-username">@{sellerUsername}</span>
+            </div>
+            <div className="seller-location">
+              Ubicación: <strong>{item.location}</strong>
+            </div>
+            <div className="seller-reputation">
+              <Rating value={reputation} votes={ownerRatingCount} />
+              <span className="seller-reviews">
+                {ownerRatingCount === 1
+                  ? "1 reseña"
+                  : `${ownerRatingCount} reseñas`}
+              </span>
+            </div>
           </div>
-          <div className="seller-count">
-            <strong>{ownerListings.length}</strong>
-            <span>publicaciones</span>
+          <div className="seller-actions">
+            <div className="seller-count-pill">
+              <span className="seller-count-number">
+                {ownerListings.length}
+              </span>
+              <span className="seller-count-label">publicaciones</span>
+            </div>
+            <button
+              type="button"
+              className="seller-button"
+              onClick={() => {
+                if (!sellerEmail) return;
+                nav(`/search?seller=${encodeURIComponent(sellerEmail)}`);
+              }}
+              disabled={!sellerEmail}
+            >
+              Ver más del vendedor
+            </button>
           </div>
         </div>
       </section>
@@ -217,40 +277,92 @@ function ItemPage() {
         <h2 className="item-section-title">Acciones</h2>
         <div className="item-action-buttons">
           <button
-            className="btn outline"
-            onClick={() => {
+            className="item-action-button"
+            onClick={async () => {
               if (!user) {
                 nav(`/login?next=${encodeURIComponent("/inbox")}`);
                 return;
               }
               if (isOwner) return;
-              const conversationId = startConversation({
-                from: user.email,
-                to: item.ownerEmail,
-                listingId: item.id,
-              });
-              if (conversationId) {
-                nav(`/inbox?conversation=${conversationId}`);
-              } else {
-                nav("/inbox");
+
+              try {
+                console.log("Iniciando conversación con vendedor:", {
+                  seller: sellerEmail,
+                  listing: item.id,
+                  currentUser: user.email,
+                });
+
+                // Primero crear la conversación
+                const conversationId = await startConversation({
+                  to: sellerEmail,
+                  listingId: item.id,
+                  initialMessage: "¡Hola! Me interesa tu artículo.",
+                });
+
+                if (!conversationId) {
+                  throw new Error("No se pudo crear la conversación");
+                }
+
+                console.log("Conversación creada:", conversationId);
+
+                // Redirigir al usuario al inbox con la conversación seleccionada
+                const inboxUrl = `/inbox?conversation=${conversationId}`;
+                console.log("Navegando a:", inboxUrl);
+                nav(inboxUrl, { replace: true });
+              } catch (error) {
+                console.error("Error al iniciar conversación:", error);
+
+                // Determinar tipo de error y mensaje apropiado
+                let errorMessage;
+                let shouldRedirect = false;
+
+                if (error.message.toLowerCase().includes("bloqueo") || error.status === 403) {
+                  // Caso específico de bloqueo
+                  if (user?.email && blocked && (
+                    blocked[user.email]?.includes(sellerEmail) || 
+                    blocked[sellerEmail]?.includes(user.email)
+                  )) {
+                    // El usuario actual está bloqueado o ha bloqueado al vendedor
+                    errorMessage = blocked[user.email]?.includes(sellerEmail)
+                      ? "Has bloqueado a este usuario. Debes desbloquearlo para poder enviarle mensajes."
+                      : "Este usuario te ha bloqueado. No puedes enviarle mensajes.";
+                  } else {
+                    // Caso general de error 403
+                    errorMessage = "No tienes permiso para iniciar esta conversación.";
+                  }
+                  shouldRedirect = true;
+                } else {
+                  // Otros errores
+                  errorMessage = "Hubo un problema al iniciar la conversación. Por favor, inténtalo de nuevo más tarde.";
+                }
+
+                // Mostrar el mensaje de error usando nuestro componente de alerta
+                setBlockAlert(errorMessage);
+
+                // Redirigir si es necesario
+                if (shouldRedirect) {
+                  nav(-1);
+                }
               }
             }}
             disabled={isOwner}
             aria-disabled={isOwner}
           >
-            <MdChat size={18} aria-hidden /> Enviar mensaje
+            <span className="item-action-title">Enviar mensaje</span>
+            <span className="item-action-sub">
+              Chatea con el vendedor en privado
+            </span>
           </button>
           <button
-            className="btn primary"
+            className="item-action-button item-action-button--primary"
             onClick={() =>
               user
                 ? nav(`/swap/${item.id}`)
-                : nav(
-                    `/login?next=${encodeURIComponent(`/swap/${item.id}`)}`,
-                  )
+                : nav(`/login?next=${encodeURIComponent(`/swap/${item.id}`)}`)
             }
           >
-            <MdSwapHoriz size={18} aria-hidden /> Proponer intercambio
+            <span className="item-action-title">Proponer intercambio</span>
+            <span className="item-action-sub">Ofrece un artículo a cambio</span>
           </button>
         </div>
       </section>

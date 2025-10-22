@@ -15,6 +15,7 @@ function HeaderContent() {
   const isHome = location.pathname === "/";
   const showBrand = !isHome || isAuthPage;
   const showSearch = !isAuthPage;
+  const [pinned, setPinned] = React.useState(true);
 
   const go = (e) => {
     e.preventDefault();
@@ -37,11 +38,22 @@ function HeaderContent() {
     document.head.appendChild(link);
   }, []);
 
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setPinned(window.scrollY <= 0);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [location.pathname]);
+
+  const shouldPin = isAuthPage || pinned;
+
   return (
     <header
       className={`header${isAuthPage ? " header--auth" : ""}${
         isHome ? " header--home" : ""
-      }`}
+      }${shouldPin ? " header--pinned" : ""}`}
     >
       <div className="header-inner">
         {showBrand && (

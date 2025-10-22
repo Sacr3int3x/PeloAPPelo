@@ -3,9 +3,13 @@ import PropTypes from "prop-types";
 import { MdStar, MdStarHalf } from "react-icons/md";
 import "./Rating.css";
 
-function Rating({ value = 4.6, votes = 120 }) {
-  const full = Math.floor(value);
-  const half = value - full >= 0.5;
+function Rating({ value = 0, votes = 0 }) {
+  const safeValue = Number.isFinite(value)
+    ? Math.min(5, Math.max(0, value))
+    : 0;
+  const safeVotes = Number.isFinite(votes) && votes > 0 ? Math.floor(votes) : 0;
+  const full = Math.floor(safeValue);
+  const half = safeValue - full >= 0.5 && full < 5;
 
   return (
     <div className="rating">
@@ -21,7 +25,7 @@ function Rating({ value = 4.6, votes = 120 }) {
         </span>
       ))}
       <span className="rating-text">
-        {value.toFixed(1)} · {votes}
+        {safeValue.toFixed(1)} · {safeVotes}
       </span>
     </div>
   );

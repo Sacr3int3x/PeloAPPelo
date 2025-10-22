@@ -1,26 +1,56 @@
 /* Archivo principal de estilos que importa todos los demás */
 @import "./reset.css";
+@import "./variables.css";
 @import "./typography.css";
 @import "./layout.css";
 @import "./buttons.css";
 @import "./forms.css";
+@import "./accessibility.css";
 @import "./components/header.css";
 @import "./components/card.css";
 @import "./components/bottomNav.css";
 @import "./components/hero.css";
+@import "./components/Badge.css";
 
 /* Overrides globales para iconos y layout */
-.btn.icon svg { display: block; width: 20px; height: 20px; }
+.btn.icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
 .btn.icon svg path,
 .btn.icon svg polyline,
-.btn.icon svg line { stroke: #003881; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn.icon svg line {
+  stroke: #1089c6;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 /* Espaciados entre secciones en CategoryPage */
-.category-content { position: relative; z-index: 0; margin-top: 16px; }
-.products-grid { position: relative; z-index: 0; margin-top: 16px; }
-.grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+.category-content {
+  position: relative;
+  z-index: 0;
+  margin-top: 16px;
+}
+.products-grid {
+  position: relative;
+  z-index: 0;
+  margin-top: 16px;
+}
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
 
 /* Separación de la barra de ordenar/publicar */
-.page .sort-filter, .sort-filter { margin-bottom: 20px; }
+.page .sort-filter,
+.sort-filter {
+  margin-bottom: 20px;
+}
 
-.card { position: relative; z-index: 0; }
+.card {
+  position: relative;
+  z-index: 0;
+}

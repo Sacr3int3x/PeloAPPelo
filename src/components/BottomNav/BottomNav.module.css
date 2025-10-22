@@ -1,0 +1,108 @@
+.bottomnav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 64px !important;
+  background: var(--color-surface) !important;
+  border-top: 1px solid var(--color-border) !important;
+  z-index: 1000 !important;
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transition: all 0.3s ease;
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
+.bottomnavInner {
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  background: var(--color-surface);
+}
+
+.tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  transition: color var(--transition-base);
+  text-decoration: none;
+}
+
+.tab:global(.active) {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.tabIconWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fabWrap {
+  display: flex;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.fab {
+  margin-top: -28px;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  border: 4px solid var(--color-surface);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  z-index: 1001;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  background: #ff3b3b;
+  border-radius: 9999px;
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 2px 4px rgba(255, 59, 59, 0.15);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 4px;
+  animation: badgePulse 2s infinite;
+  transform-origin: center center;
+}
+
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(255, 59, 59, 0.15);
+  }
+  70% {
+    transform: scale(1.12);
+    box-shadow: 0 4px 8px rgba(255, 59, 59, 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(255, 59, 59, 0.15);
+  }
+}

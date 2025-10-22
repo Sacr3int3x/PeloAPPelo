@@ -1,61 +1,37 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useCallback,
-} from "react";
-import {
-  FaArrowLeft,
-  FaBan,
-  FaPaperclip,
-  FaPaperPlane,
-  FaTrashAlt,
-  FaUnlock,
-} from "react-icons/fa";
-import PageHeader from "../components/PageHeader/PageHeader";
+import React, { useState, useMemo, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../context/MessageContext";
 import { useData } from "../context/DataContext";
+import { useLocation } from "react-router-dom";
+import RatingForm from "../components/RatingForm/RatingForm";
 import "../styles/InboxPage.css";
+import "../styles/seller.css";
 
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () =>
-      resolve({
-        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        src: reader.result,
-        name: file.name,
-        mime: file.type || "image/jpeg",
-      });
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// Constante para la imagen por defecto
+const defaultAvatar = "/images/avatars/default.svg";
 
-const formatTimestamp = (iso) => {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  const now = new Date();
-  const sameDay =
-    date.getDate() === now.getDate() &&
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear();
-  return sameDay
-    ? date.toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : date.toLocaleString(undefined, {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+// Modal de confirmación reutilizable
+const ConfirmModal = ({ open, onClose, onConfirm, text }) => {
+  if (!open) return null;
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-text">{text}</div>
+        <div className="modal-actions">
+          <button className="btn primary" onClick={onConfirm}>
+            Confirmar
+          </button>
+          <button className="btn outline" onClick={onClose}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-const avatarFromEmail = (email) => email?.charAt(0)?.toUpperCase() || "?";
-
 function InboxPage() {
+  // HOOKS Y ESTADOS PRINCIPALES
   const { user } = useAuth();
   const {
     conversations,
@@ -63,264 +39,504 @@ function InboxPage() {
     deleteConversation,
     blockParticipant,
     unblockParticipant,
-    isBlocked,
+    completeConversation: completeConversationAction,
+    submitReputation: submitReputationAction,
+    markConversationAsRead,
+    unreadCount,
   } = useMessages();
+
+  const messagesEndRef = React.useRef(null);
   const { byId } = useData();
-
-  const myEmail = user?.email || "";
-
-  const [search, setSearch] = useState("");
+  const location = useLocation();
   const [activeId, setActiveId] = useState(null);
+  const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
-  const [draftAttachments, setDraftAttachments] = useState([]);
-  const [messageError, setMessageError] = useState("");
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 960);
 
+  // Seleccionar conversación automáticamente si viene en la URL
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 960);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const params = new URLSearchParams(location.search);
+    const conversationId = params.get("conversation");
+    if (conversationId) {
+      setActiveId(conversationId);
+      // Marcar como leído con un pequeño retraso para asegurar que los datos están cargados
+      setTimeout(() => {
+        markConversationAsRead(conversationId);
+      }, 100);
+    }
+  }, [location.search, markConversationAsRead]);
+
+  // Efecto adicional para marcar como leídos los mensajes cuando se selecciona una conversación
+  useEffect(() => {
+    if (activeId) {
+      markConversationAsRead(activeId);
+    }
+  }, [activeId, markConversationAsRead]);
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // Efecto para resetear el scroll cuando se monta el componente
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
+  // Efecto para hacer scroll al último mensaje cuando se cambia la conversación
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    scrollToBottom();
+  }, [activeId]); 
+
+  // Scroll cuando llegan nuevos mensajes
+  useEffect(() => {
+    const activeConv = conversations.find((c) => c.id === activeId);
+    if (activeConv?.messages?.length) {
+      scrollToBottom();
+    }
+  }, [activeId, conversations]);
+  const [draftAttachments, setDraftAttachments] = useState([]);
+  const [modal, setModal] = useState({
+    open: false,
+    action: null,
+    text: "",
+    onConfirm: null,
+  });
+  const [messageError, setMessageError] = useState("");
+  const [completePending, setCompletePending] = useState(false);
+  const [completeError, setCompleteError] = useState("");
+  const [ratingPending, setRatingPending] = useState(false);
+  const [ratingFeedback, setRatingFeedback] = useState("");
+  const isMobile = window.innerWidth <= 900;
+  const myEmail = user?.email || user?.id;
+
   const conversationsForUser = useMemo(() => {
-    if (!myEmail) return [];
+    if (!myEmail) {
+      console.log(
+        "No hay email del usuario, no se pueden mostrar conversaciones",
+      );
+      return [];
+    }
+
+    console.log("Estado de las conversaciones:", {
+      totalConversations: conversations.length,
+      myEmail,
+    });
+
     const term = search.trim().toLowerCase();
     const list = conversations
-      .filter((conv) => conv.participants.includes(myEmail))
+      .filter((conv) => {
+        // Verificar que la conversación tenga la estructura correcta
+        if (!conv || !Array.isArray(conv.participants)) {
+          console.warn("Conversación inválida:", conv);
+          return false;
+        }
+
+        const isParticipant = conv.participants.includes(myEmail);
+        console.log("Verificando participación:", {
+          conversationId: conv.id,
+          participants: conv.participants,
+          myEmail,
+          isParticipant,
+        });
+        return isParticipant;
+      })
       .map((conv) => {
-        const other = conv.participants.find((p) => p !== myEmail) || myEmail;
+        // Obtener el otro participante y sus datos
+        const otherParticipant =
+          conv.participants.find((p) => p !== myEmail) || myEmail;
+        const otherUser = conv.participants_data?.find(
+          (p) => p.email === otherParticipant,
+        );
+
+        console.log("Procesando conversación:", {
+          id: conv.id,
+          otherParticipant,
+          otherUser,
+          messages: conv.messages?.length || 0,
+          participants_data: conv.participants_data,
+        });
+
+        // Notificación de no leídos
+        const lastReadTime = conv.lastReadAt?.[user.id] || 0;
+        const unread =
+          Array.isArray(conv.messages) &&
+          conv.messages.some((m) => {
+            const isFromOther = m.sender !== myEmail;
+            const messageTime = new Date(m.createdAt).getTime();
+            return isFromOther && messageTime > lastReadTime;
+          });
+
+        // Extraer el nombre y avatar del otro participante de los datos de la conversación
         const listing = conv.listingId ? byId(conv.listingId) : null;
+
         return {
           ...conv,
-          other,
+          other: otherParticipant,
+          otherName: otherUser?.name || otherParticipant.split("@")[0],
+          otherUser,
           listing,
+          unread,
         };
-      })
-      .sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      );
+      });
     if (!term) return list;
-    return list.filter((conv) => {
-      const otherMatch = conv.other.toLowerCase().includes(term);
-      const listingMatch = conv.listing?.name
-        ?.toLowerCase()
-        .includes(term);
-      return otherMatch || listingMatch;
-    });
-  }, [byId, conversations, myEmail, search]);
-
-  useEffect(() => {
-    if (!myEmail) return;
-    if (!activeId && conversationsForUser.length) {
-      setActiveId(conversationsForUser[0].id);
-    } else if (
-      activeId &&
-      !conversationsForUser.some((conv) => conv.id === activeId)
-    ) {
-      const fallback = conversationsForUser[0];
-      setActiveId(fallback ? fallback.id : null);
-    }
-  }, [activeId, conversationsForUser, myEmail]);
-
-  useEffect(() => {
-    setDraft("");
-    setDraftAttachments([]);
-    setMessageError("");
-  }, [activeId]);
-
-  const activeConversation = useMemo(
-    () => conversationsForUser.find((conv) => conv.id === activeId) || null,
-    [conversationsForUser, activeId],
-  );
-
-  const listHidden = isMobile && activeConversation;
-  const threadHidden = isMobile && !activeConversation;
-
-  const handleFileUpload = async (event) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) return;
-    const remainingSlots = 6 - draftAttachments.length;
-    const selected = files.slice(0, remainingSlots);
-    try {
-      const previews = await Promise.all(selected.map((file) => readFileAsDataUrl(file)));
-      setDraftAttachments((prev) => [...prev, ...previews]);
-    } catch (err) {
-      console.error("Error leyendo adjuntos", err);
-    }
-  };
-
-  const removeAttachment = (id) => {
-    setDraftAttachments((prev) => prev.filter((att) => att.id !== id));
-  };
-
-  const handleSend = (event) => {
-    event.preventDefault();
-    if (!activeConversation) return;
-    const result = sendMessage(
-      activeConversation.id,
-      myEmail,
-      draft,
-      draftAttachments,
+    return list.filter(
+      (conv) =>
+        (conv.otherName && conv.otherName.toLowerCase().includes(term)) ||
+        (conv.listing && conv.listing.name.toLowerCase().includes(term)),
     );
-    if (!result?.success) {
-      setMessageError(result?.error || "No se pudo enviar el mensaje.");
+  }, [byId, conversations, myEmail, search, user?.id]);
+
+  // Utilidad para adjuntos con validación
+  const readFileAsDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      // Validar tamaño del archivo (máximo 5MB)
+      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      if (file.size > MAX_SIZE) {
+        reject(new Error("El archivo es demasiado grande. Máximo 5MB."));
+        return;
+      }
+
+      // Validar tipo de archivo
+      const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        reject(
+          new Error("Solo se permiten imágenes en formato JPG, PNG o WEBP."),
+        );
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          src: reader.result,
+          name: file.name,
+          mime: file.type || "image/jpeg",
+        });
+      reader.onerror = (error) => {
+        reject(
+          new Error(
+            "No se pudo procesar la imagen. Por favor, intenta con otra.",
+          ),
+        );
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const formatTimestamp = (iso) => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "";
+    const now = new Date();
+    const sameDay =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+    return sameDay
+      ? date.toLocaleTimeString(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : date.toLocaleString(undefined, {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+  };
+
+  // Handlers globales para la conversación activa
+  const activeConversation = conversations.find((c) => c.id === activeId);
+  const otherEmail = activeConversation?.participants.find(
+    (p) => p !== myEmail,
+  );
+  const listing = activeConversation?.listingId
+    ? byId(activeConversation.listingId)
+    : null;
+  const transaction = activeConversation?.transaction || {};
+  const transactionCompleted = !!transaction.completed;
+  const isListingOwner =
+    listing && (listing.owner === myEmail || listing.ownerEmail === myEmail);
+  const blockedByMe = activeConversation?.blockedBy?.includes(myEmail);
+  const composerDisabled =
+    blockedByMe || activeConversation?.blockedBy?.includes(otherEmail);
+  const pendingRating =
+    transactionCompleted && !transaction.ratedBy?.includes(myEmail);
+  const counterpartRated =
+    transactionCompleted && transaction.ratedBy?.includes(otherEmail);
+
+  // Adjuntos
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    setMessageError("");
+
+    try {
+      const uploads = await Promise.all(
+        files.map(async (file) => {
+          try {
+            return await readFileAsDataUrl(file);
+          } catch (error) {
+            throw new Error(
+              `Error con el archivo ${file.name}: ${error.message}`,
+            );
+          }
+        }),
+      );
+      setDraftAttachments((prev) => [...prev, ...uploads]);
+      e.target.value = "";
+    } catch (error) {
+      setMessageError(
+        error.message ||
+          "No se pudo subir la foto. Intenta más tarde de nuevo.",
+      );
+      e.target.value = "";
+    }
+  };
+  const removeAttachment = (id) => {
+    setDraftAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  // Enviar mensaje
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (composerDisabled || (!draft.trim() && draftAttachments.length === 0))
+      return;
+    setMessageError("");
+    try {
+      await sendMessage(
+        activeConversation.id,
+        user.email,
+        draft,
+        draftAttachments,
+      );
+      setDraft("");
+      setDraftAttachments([]);
+    } catch (err) {
+      console.error("Error al enviar mensaje:", err);
+      // Manejar errores específicos
+      if (err.message.includes("desbloquear")) {
+        setMessageError("No puedes enviar mensajes a este usuario porque está bloqueado. Debes desbloquearlo primero desde tu perfil.");
+      } else if (err.status === 403) {
+        setMessageError("Este usuario te ha bloqueado y no puedes enviarle mensajes.");
+      } else {
+        setMessageError("No se pudo enviar el mensaje. Intenta de nuevo más tarde.");
+      }
+    }
+  };
+
+  // Calificación
+  const handleRatingSubmit = async (rating, feedback) => {
+    setRatingPending(true);
+    await submitReputationAction(activeConversation.id, rating, feedback);
+    setRatingPending(false);
+    setRatingFeedback("¡Gracias por calificar!");
+  };
+
+  // Confirmaciones modales
+  const confirmDelete = () => {
+    setModal({
+      open: true,
+      action: "delete",
+      text: "¿Deseas eliminar esta conversación? Esta acción no se puede deshacer.",
+      onConfirm: () => {
+        deleteConversation(activeConversation.id);
+        setModal((m) => ({ ...m, open: false }));
+      },
+    });
+  };
+  const toggleBlock = () => {
+    const currentlyBlocked = blockedByMe;
+    setModal({
+      open: true,
+      action: currentlyBlocked ? "unblock" : "block",
+      text: currentlyBlocked
+        ? "¿Quieres desbloquear a este usuario? Podrán volver a enviarte mensajes."
+        : "¿Seguro que deseas bloquear a este usuario? No recibirás más mensajes suyos.",
+      onConfirm: () => {
+        if (currentlyBlocked) {
+          unblockParticipant(myEmail, otherEmail);
+        } else {
+          blockParticipant(myEmail, otherEmail);
+        }
+        setModal((m) => ({ ...m, open: false }));
+      },
+    });
+  };
+  const handleMarkSold = () => {
+    if (!activeConversation || !listing) {
+      console.error("No hay conversación activa o publicación");
       return;
     }
-    setDraft("");
-    setDraftAttachments([]);
+
+    console.log("Intentando marcar como vendido:", {
+      conversationId: activeConversation.id,
+      listingId: listing.id,
+      isOwner: isListingOwner,
+    });
+
+    setModal({
+      open: true,
+      action: "sold",
+      text: "¿Confirmas que deseas marcar esta publicación como vendida?",
+      onConfirm: async () => {
+        setCompleteError("");
+        setCompletePending(true);
+        try {
+          console.log(
+            "Ejecutando completeConversation:",
+            activeConversation.id,
+          );
+          const result = await completeConversationAction(
+            activeConversation.id,
+          );
+          console.log("Resultado de completeConversation:", result);
+
+          if (result?.success) {
+            // Actualizar el estado local inmediatamente
+            const updatedConversation = result.conversation;
+            if (updatedConversation) {
+              setActiveId(updatedConversation.id);
+            }
+          } else {
+            setCompleteError(
+              result?.error || "No se pudo marcar la transacción.",
+            );
+          }
+        } catch (error) {
+          console.error("Error al marcar como vendido:", error);
+          setCompleteError("Ocurrió un error al procesar la transacción.");
+        } finally {
+          setCompletePending(false);
+          setModal((m) => ({ ...m, open: false }));
+        }
+      },
+    });
   };
 
-  const confirmDelete = useCallback(
-    (conversationId) => {
-      const confirmed = window.confirm(
-        "¿Deseas eliminar esta conversación? Esta acción no se puede deshacer.",
-      );
-      if (confirmed) {
-        deleteConversation(conversationId);
-      }
-    },
-    [deleteConversation],
-  );
-
-  const toggleBlock = useCallback(
-    (owner, target) => {
-      const currentlyBlocked = isBlocked(owner, target);
-      const message = currentlyBlocked
-        ? "¿Quieres desbloquear a este usuario? Podrán volver a enviarte mensajes."
-        : "¿Seguro que deseas bloquear a este usuario? No recibirás más mensajes suyos.";
-      const confirmed = window.confirm(message);
-      if (!confirmed) return;
-      if (currentlyBlocked) {
-        unblockParticipant(owner, target);
-      } else {
-        blockParticipant(owner, target);
-      }
-    },
-    [blockParticipant, isBlocked, unblockParticipant],
-  );
-
-  const renderConversationCard = (conv) => {
-    const lastMessage = conv.messages[conv.messages.length - 1];
-    const preview = lastMessage?.body;
-    const hasImages = Array.isArray(lastMessage?.attachments) && lastMessage.attachments.length > 0;
-    const blockedByMe = isBlocked(myEmail, conv.other);
-    const blockedText = blockedByMe ? "Usuario bloqueado" : null;
-    return (
-      <button
-        key={conv.id}
-        type="button"
-        className={`inbox-card ${conv.id === activeId ? "active" : ""}`}
-        onClick={() => setActiveId(conv.id)}
-      >
-        <div className="inbox-card-avatar" aria-hidden>
-          {avatarFromEmail(conv.other)}
-        </div>
-        <div className="inbox-card-body">
-          <div className="inbox-card-header">
-            <span className="inbox-card-name">{conv.other.split("@")[0]}</span>
-            <span className="inbox-card-date">{formatTimestamp(conv.updatedAt)}</span>
-          </div>
-          <div className="inbox-card-preview">
-            {blockedText
-              ? blockedText
-              : hasImages && !preview
-                ? "📷 Imagen enviada"
-                : hasImages
-                ? `📷 ${preview}`
-                : preview || "Conversación sin mensajes"}
-          </div>
-          {conv.listing && (
-            <div className="inbox-card-tags">
-              <span>{conv.listing.name}</span>
-            </div>
-          )}
-        </div>
-      </button>
-    );
-  };
-
+  // Renderizado de la conversación activa
   const renderThread = () => {
     if (!activeConversation) {
       return (
         <div className="thread-placeholder">
-          <h3>Selecciona una conversación</h3>
-          <p>Encuentra tus intercambios y continúa la negociación.</p>
+          Selecciona una conversación para ver los mensajes.
         </div>
       );
     }
 
-    const otherEmail = activeConversation.other;
-    const listing = activeConversation.listing;
-    const blockedByMe = isBlocked(myEmail, otherEmail);
-    const blockedMe = isBlocked(otherEmail, myEmail);
-    const composerDisabled = blockedByMe || blockedMe;
+    console.log("Renderizando conversación activa:", {
+      id: activeConversation.id,
+      mensajes: activeConversation.messages?.length || 0,
+      participantes: activeConversation.participants,
+      miEmail: myEmail,
+    });
 
     return (
       <div className="thread">
-        <header className="thread-header">
+        {/* Barra fija superior con acciones */}
+        <div className="thread-actions-bar">
           {isMobile && (
             <button
-              type="button"
               className="thread-back"
               onClick={() => setActiveId(null)}
+              aria-label="Volver a la lista"
             >
-              <FaArrowLeft />
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
             </button>
           )}
-          <div className="thread-user">
-            <div className="thread-avatar" aria-hidden>
-              {avatarFromEmail(otherEmail)}
+          {listing && (
+            <div className="thread-listing">
+              <div>
+                <strong>{listing.name}</strong>
+              </div>
+              <a className="thread-listing-link" href={`#/item/${listing.id}`}>
+                Ver publicación
+              </a>
             </div>
-            <div>
-              <div className="thread-name">{otherEmail.split("@")[0]}</div>
-              <div className="thread-email">{otherEmail}</div>
-            </div>
-          </div>
-          <div className="thread-toolbar">
+          )}
+          <div className="thread-transaction">
+            {!transactionCompleted && isListingOwner && (
+              <button
+                type="button"
+                className="btn primary"
+                onClick={handleMarkSold}
+                disabled={completePending}
+              >
+                {completePending ? "Marcando..." : "Marcar como concretado"}
+              </button>
+            )}
             <button
               type="button"
               className="btn outline sm"
-              onClick={() => toggleBlock(myEmail, otherEmail)}
+              onClick={toggleBlock}
             >
-              {blockedByMe ? (
-                <>
-                  <FaUnlock /> Desbloquear
-                </>
-              ) : (
-                <>
-                  <FaBan /> Bloquear
-                </>
-              )}
+              {blockedByMe ? "Desbloquear" : "Bloquear"}
             </button>
             <button
               type="button"
               className="btn outline sm danger"
-              onClick={() => confirmDelete(activeConversation.id)}
+              onClick={confirmDelete}
             >
-              <FaTrashAlt /> Borrar
+              Borrar
             </button>
+            {completeError && (
+              <div className="field-error" role="alert">
+                {completeError}
+              </div>
+            )}
+            {transactionCompleted && (
+              <div className="transaction-status">
+                <strong>Operación registrada</strong>
+                <span>
+                  {`Participantes: comprador ${transaction.buyerId === user?.id ? "(tú)" : ""} · vendedor ${transaction.sellerId === user?.id ? "(tú)" : ""}`}
+                </span>
+              </div>
+            )}
+            {transactionCompleted && pendingRating && (
+              <div className="transaction-rating">
+                <h3>Califica tu experiencia</h3>
+                <RatingForm
+                  onSubmit={handleRatingSubmit}
+                  pending={ratingPending}
+                />
+                {ratingFeedback && (
+                  <div className="transaction-feedback">{ratingFeedback}</div>
+                )}
+              </div>
+            )}
+            {transactionCompleted && !pendingRating && (
+              <div className="transaction-rating-summary">
+                {ratingFeedback ||
+                  (counterpartRated
+                    ? "Ambas calificaciones registradas."
+                    : "Gracias por calificar. Esperando la calificación de la otra parte.")}
+              </div>
+            )}
           </div>
-        </header>
+        </div>
 
-        {listing && (
-          <div className="thread-listing">
-            <div>
-              <strong>{listing.name}</strong>
-              <span>{listing.location}</span>
-            </div>
-            <a className="thread-listing-link" href={`#/item/${listing.id}`}>
-              Ver publicación
-            </a>
-          </div>
-        )}
-
+        {/* Mensajes scrollables debajo de la barra fija */}
         <div className="thread-messages" aria-live="polite">
           {activeConversation.messages.length === 0 ? (
             <div className="thread-empty">No hay mensajes todavía.</div>
           ) : (
             activeConversation.messages.map((msg) => {
               const mine = msg.sender === myEmail;
-              const hasImages = Array.isArray(msg.attachments) && msg.attachments.length > 0;
+              const hasImages =
+                Array.isArray(msg.attachments) && msg.attachments.length > 0;
               return (
                 <div
                   key={msg.id}
@@ -345,81 +561,116 @@ function InboxPage() {
                     <div className="thread-message-body">{msg.body}</div>
                   )}
                   <span className="thread-message-meta">
-                    {mine ? "Tú" : otherEmail.split("@")[0]} · {formatTimestamp(msg.createdAt)}
+                    {mine ? "Tú" : otherEmail.split("@")[0]} ·{" "}
+                    {formatTimestamp(msg.createdAt)}
                   </span>
                 </div>
               );
             })
           )}
+          <div ref={messagesEndRef} />
         </div>
 
-        <form className="thread-composer" onSubmit={handleSend}>
-          {composerDisabled && (
-            <div className="thread-alert">
-              {blockedByMe
-                ? "Has bloqueado a este usuario. Desbloquéalo para continuar la conversación."
-                : "Este usuario bloqueó la conversación. No puedes responder."}
-            </div>
-          )}
+        {/* Input fijo abajo */}
+        <div className="thread-composer-fixed">
+          <form className="thread-composer" onSubmit={handleSend}>
+            {composerDisabled && (
+              <div className="thread-alert">
+                {blockedByMe
+                  ? "Has bloqueado a este usuario. Desbloquéalo para continuar la conversación."
+                  : "Este usuario bloqueó la conversación. No puedes responder."}
+              </div>
+            )}
 
-          {draftAttachments.length > 0 && (
-            <div className="composer-attachments">
-              {draftAttachments.map((att) => (
-                <div key={att.id} className="composer-attachment">
-                  <img src={att.src} alt={att.name} />
-                  <button
-                    type="button"
-                    className="attachment-remove"
-                    onClick={() => removeAttachment(att.id)}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+            {draftAttachments.length > 0 && (
+              <div className="composer-attachments">
+                {draftAttachments.map((att) => (
+                  <div key={att.id} className="composer-attachment">
+                    <img src={att.src} alt={att.name} />
+                    <button
+                      type="button"
+                      className="attachment-remove"
+                      onClick={() => removeAttachment(att.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <div className="composer-controls">
-            <label className="attach-button">
-              <FaPaperclip />
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileUpload}
-                disabled={composerDisabled}
-              />
-            </label>
+            <div className="composer-toolbar custom-toolbar">
+              <label
+                className="attach-button custom-attach"
+                style={{ color: "#1089c6" }}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    d="M12 5v14m-7-7h14"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileUpload}
+                  disabled={composerDisabled}
+                />
+              </label>
+              <div style={{ flex: 1 }} />
+              <button
+                type="submit"
+                className="btn primary custom-send"
+                style={{ background: "#ffff", color: "#1089c6" }}
+                disabled={
+                  composerDisabled ||
+                  (!draft.trim() && draftAttachments.length === 0)
+                }
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+              </button>
+            </div>
             <textarea
               className="input"
               placeholder={
-                composerDisabled
-                  ? ""
-                  : "Escribe un mensaje o adjunta imágenes"
+                composerDisabled ? "" : "Escribe un mensaje o adjunta imágenes"
               }
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              rows={ composerDisabled ? 2 : 3 }
+              rows={composerDisabled ? 2 : 3}
               disabled={composerDisabled}
             />
-            <button
-              type="submit"
-              className="btn primary"
-              disabled={
-                composerDisabled ||
-                (!draft.trim() && draftAttachments.length === 0)
-              }
-            >
-              <FaPaperPlane aria-hidden />
-              <span>Enviar</span>
-            </button>
-          </div>
-          {messageError && (
-            <div className="field-error" role="alert">
-              {messageError}
-            </div>
-          )}
-        </form>
+            {messageError && (
+              <div className="field-error" role="alert">
+                {messageError}
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Modal de confirmación */}
+        <ConfirmModal
+          open={modal.open}
+          text={modal.text}
+          onClose={() => setModal((m) => ({ ...m, open: false }))}
+          onConfirm={modal.onConfirm}
+        />
       </div>
     );
   };
@@ -428,11 +679,15 @@ function InboxPage() {
     return <main className="container page">No autorizado.</main>;
   }
 
+  // return principal al final
   return (
-    <main className="container page inbox-page">
-      <PageHeader title="Mensajes" />
+    <main
+      className={`container page inbox-page${activeId ? " has-active-chat no-app-header" : ""}`}
+    >
       <div className="inbox-shell">
-        <section className={`conversation-list ${listHidden ? "hidden" : ""}`}>
+        <section
+          className={`conversation-list ${isMobile && activeId ? "hidden" : ""}`}
+        >
           <div className="list-header">
             <h2>Conversaciones</h2>
             <input
@@ -445,15 +700,66 @@ function InboxPage() {
           <div className="list-scroller" role="list">
             {conversationsForUser.length === 0 ? (
               <div className="list-empty">
-                No hay conversaciones todavía. Escribe a un vendedor desde un anuncio.
+                No hay conversaciones todavía. Escribe a un vendedor desde un
+                anuncio.
               </div>
             ) : (
-              conversationsForUser.map(renderConversationCard)
+              conversationsForUser.map((conv) => {
+                const displayName = conv.otherName;
+                return (
+                  <div
+                    key={conv.id}
+                    className={`inbox-card${activeId === conv.id ? " active" : ""}${conv.unread ? " message-new" : ""}`}
+                    onClick={() => {
+                      setActiveId(conv.id);
+                      markConversationAsRead(conv.id);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="seller-photo-wrapper">
+                      <img
+                        src={
+                          conv.listing?.images?.[0] || "/images/placeholder.jpg"
+                        }
+                        alt={
+                          conv.listing
+                            ? `Imagen de ${conv.listing.name}`
+                            : "Imagen del artículo"
+                        }
+                        className="seller-photo"
+                        onError={(event) => {
+                          console.log(
+                            "Error cargando imagen:",
+                            event.currentTarget.src,
+                          );
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = "/images/placeholder.jpg";
+                        }}
+                        loading="lazy"
+                      />
+                    </div>
+
+                    <div className="inbox-card-body">
+                      <div className="inbox-card-header">
+                        <span className="inbox-card-name">{displayName}</span>
+                      </div>
+                      {conv.listing && (
+                        <div className="inbox-card-preview">
+                          {conv.listing.name}
+                        </div>
+                      )}
+                    </div>
+                    {conv.unread && <span className="inbox-card-unread" />}
+                  </div>
+                );
+              })
             )}
           </div>
         </section>
-
-        <section className={`conversation-thread ${threadHidden ? "hidden" : ""}`}>
+        <section
+          className={`conversation-thread ${isMobile && !activeId ? "hidden" : ""}`}
+        >
           {renderThread()}
         </section>
       </div>

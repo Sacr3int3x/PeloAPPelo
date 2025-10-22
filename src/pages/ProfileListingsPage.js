@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { HiOutlineArrowLeft } from "react-icons/hi";
+import "../styles/CategoryPage.css";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { fmt } from "../utils/format";
@@ -9,6 +11,7 @@ const statusLabel = {
   active: "Activa",
   paused: "Pausada",
   sold: "Finalizada",
+  finalizado: "Finalizada",
 };
 
 const planLabel = {
@@ -36,7 +39,7 @@ function ProfileListingsPage() {
     return () => clearTimeout(t);
   }, [feedback]);
 
-  const handleStatusChange = (listingId, nextStatus) => {
+  const handleStatusChange = async (listingId, nextStatus) => {
     const promptMap = {
       active: "¿Deseas reactivar esta publicación?",
       paused: "¿Deseas pausar temporalmente esta publicación?",
@@ -44,8 +47,14 @@ function ProfileListingsPage() {
     };
     const question = promptMap[nextStatus] || "¿Confirmas esta acción?";
     if (!window.confirm(question)) return;
-    updateStatus(listingId, nextStatus);
-    setFeedback("Estado actualizado correctamente.");
+    const result = await updateStatus(listingId, nextStatus);
+    if (result?.success) {
+      setFeedback("Estado actualizado correctamente.");
+    } else if (result?.error) {
+      setFeedback(result.error);
+    } else {
+      setFeedback("No se pudo actualizar el estado.");
+    }
   };
 
   if (!user) {
@@ -61,22 +70,18 @@ function ProfileListingsPage() {
   return (
     <main className="container page profile-listings-page">
       <section className="panel profile-listings-panel">
-        <div className="profile-listings-page-head">
-          <div>
-            <h1 className="profile-section-title">
-              Mis publicaciones ({listings.length})
-            </h1>
-            <p className="muted">
-              Gestiona la visibilidad de tus anuncios desde un solo lugar.
-            </p>
-          </div>
+        <div className="category-header-bar" style={{ marginBottom: 24 }}>
           <button
-            type="button"
-            className="btn outline"
+            className="page-nav-btn"
             onClick={() => navigate(-1)}
+            title="Volver"
           >
-            Volver
+            <HiOutlineArrowLeft size={24} />
           </button>
+          <h2 className="category-header-title" style={{ margin: 0 }}>
+            Mis publicaciones ({listings.length})
+          </h2>
+          <span style={{ width: 46 }}></span>
         </div>
 
         {feedback && <div className="profile-feedback">{feedback}</div>}
@@ -93,20 +98,26 @@ function ProfileListingsPage() {
                 <div className="profile-listing-detail">
                   <div className="profile-listing-header">
                     <h2 className="profile-listing-title">{listing.name}</h2>
-                    <span className={`profile-status-chip status-${listing.status}`}>
+                    <span
+                      className={`profile-status-chip status-${listing.status}`}
+                    >
                       {statusLabel[listing.status] || listing.status}
                     </span>
                   </div>
                   <div className="profile-listing-meta">
                     <span>REF {fmt(listing.price)}</span>
                     <span>{listing.location}</span>
-                    <span className={`profile-plan plan-${listing.plan || "gratis"}`}>
+                    <span
+                      className={`profile-plan plan-${listing.plan || "gratis"}`}
+                    >
                       {planLabel[listing.plan] || "Publicación"}
                     </span>
                   </div>
                   <p className="profile-listing-description">
                     {(listing.description || "Sin descripción.").slice(0, 160)}
-                    {listing.description && listing.description.length > 160 ? "…" : ""}
+                    {listing.description && listing.description.length > 160
+                      ? "…"
+                      : ""}
                   </p>
                 </div>
                 <div className="profile-status-actions">
@@ -128,7 +139,9 @@ function ProfileListingsPage() {
                       Pausar
                     </button>
                   )}
-                  {listing.status !== "sold" && (
+                  {!["sold", "finalizado", "finalized"].includes(
+                    listing.status,
+                  ) && (
                     <button
                       type="button"
                       className="status-btn danger"

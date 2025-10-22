@@ -21,6 +21,7 @@ function PublishPage() {
     location: user?.location || "",
     price: "",
     description: "",
+    condition: "nuevo",
   });
 
   const [photos, setPhotos] = useState([]);
@@ -145,7 +146,11 @@ function PublishPage() {
 
   const validateStepOne = () => {
     const nextErrors = {};
-    if (!formData.name.trim()) nextErrors.name = "Agrega un título descriptivo.";
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) nextErrors.name = "Agrega un título descriptivo.";
+    if (trimmedName.length > 60) {
+      nextErrors.name = "Máximo 60 caracteres para el título.";
+    }
     if (!formData.price || Number(formData.price) <= 0)
       nextErrors.price = "Indica el precio de referencia.";
     if (!formData.description.trim())
@@ -155,6 +160,7 @@ function PublishPage() {
     if (!formData.location)
       nextErrors.location = "Actualiza tu ubicación desde tu perfil.";
     if (!photos.length) nextErrors.photos = "Sube al menos una foto.";
+    if (!formData.condition) nextErrors.condition = "Selecciona la condición.";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -221,8 +227,8 @@ function PublishPage() {
   const loaderSteps = useMemo(
     () => [
       { label: "Preparando tu publicación…", duration: 1100 },
-      { label: "Subiendo tus imágenes…", duration: 1600 },
-      { label: "Aplicando plan seleccionado…", duration: 1200 },
+      { label: "Subiendo tus imágenes…", duration: 1700 },
+      { label: "Aplicando el plan seleccionado…", duration: 1200 },
       { label: "Publicando en peloAPPelo…", duration: 1300 },
       { label: "Compartiendo tu anuncio…", duration: 1000 },
     ],
@@ -230,14 +236,27 @@ function PublishPage() {
   );
 
   const finishLoading = useCallback(() => {
-    if (pendingPayload) {
-      create(pendingPayload);
-      setPendingPayload(null);
+    if (!pendingPayload) {
+      setShowLoader(false);
+      setTimeout(() => {
+        nav("/");
+      }, 500);
+      return;
     }
-    setShowLoader(false);
-    setTimeout(() => {
-      nav("/");
-    }, 500);
+    const payload = pendingPayload;
+    setPendingPayload(null);
+    create(payload).then((result) => {
+      setShowLoader(false);
+      if (result?.success) {
+        setTimeout(() => {
+          nav("/");
+        }, 500);
+      } else if (result?.error) {
+        setFeedback(result.error);
+      } else {
+        setFeedback("No se pudo publicar el anuncio. Inténtalo nuevamente.");
+      }
+    });
   }, [create, nav, pendingPayload]);
 
   const goNext = () => {
@@ -323,10 +342,12 @@ function PublishPage() {
                   <input
                     className={`input ${errors.name ? "input-error" : ""}`}
                     value={formData.name}
-                    onChange={(e) => setField("name", e.target.value)}
+                    onChange={(e) => setField("name", e.target.value.slice(0, 60))}
                     placeholder="Ej: Toyota Corolla 2020 impecable"
+                    maxLength={60}
                     required
                   />
+                  <span className="field-hint">{60 - formData.name.length} caracteres disponibles</span>
                   {errors.name && <span className="field-error">{errors.name}</span>}
                 </label>
               </div>
@@ -357,6 +378,22 @@ function PublishPage() {
                   options={models.map((m) => ({ value: m, label: m }))}
                   placeholder="Selecciona un modelo"
                 />
+                <div className={`publish-field ${errors.condition ? "has-error" : ""}`}>
+                  <Select
+                    label="Condición"
+                    name="condition"
+                    value={formData.condition}
+                    onChange={(val) => setField("condition", val)}
+                    options={[
+                      { value: "nuevo", label: "Nuevo" },
+                      { value: "usado", label: "Usado" },
+                    ]}
+                    placeholder="Selecciona la condición"
+                  />
+                  {errors.condition && (
+                    <span className="field-error">{errors.condition}</span>
+                  )}
+                </div>
                 <label className="publish-field">
                   <span className="label">Precio (REF)</span>
                   <input
@@ -510,6 +547,12 @@ function PublishPage() {
                 <div className="publish-preview-card">
                   <strong>Ubicación</strong>
                   <span>{formData.location || "No especificada"}</span>
+                </div>
+                <div className="publish-preview-card">
+                  <strong>Condición</strong>
+                  <span>
+                    {formData.condition === "usado" ? "Usado" : "Nuevo"}
+                  </span>
                 </div>
                 <div className="publish-preview-card">
                   <strong>Precio</strong>

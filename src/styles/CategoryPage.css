@@ -5,20 +5,33 @@
   padding-top: clamp(12px, 3vw, 20px);
 }
 
-.category-page-header {
+.category-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: clamp(16px, 3vw, 24px);
+  margin-bottom: clamp(16px, 3vw, 20px);
+}
+
+.category-header-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 700;
+  text-align: center;
+  flex: 1 1 auto;
+}
+
+.category-header-btn {
+  width: 46px;
+  height: 46px;
 }
 
 .page-nav-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -34,43 +47,34 @@
   transform: translateY(-1px);
 }
 
-.category-toolbar {
+.category-actions-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  width: 100%;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: clamp(12px, 3vw, 20px);
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: var(--radius-full);
+  padding: 8px 14px;
+  margin: clamp(10px, 3vw, 16px) 0 0;
 }
 
-.category-toolbar-info {
-  color: var(--color-text-muted);
+.category-count {
   font-size: var(--font-size-sm);
-  font-weight: 500;
-  min-width: 140px;
-  flex: 1 1 auto;
-}
-
-.category-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
+  color: var(--color-text-muted);
+  font-weight: 600;
 }
 
 .view-toggle-group {
   display: inline-flex;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: var(--radius-full);
   overflow: hidden;
 }
 
 .view-toggle {
   width: 40px;
-  height: 40px;
+  height: 30px;
   border: none;
   background: transparent;
   display: inline-flex;
@@ -84,7 +88,7 @@
 }
 
 .view-toggle:hover {
-  color: var(--color-primary);
+  color: #1089c6;
   transform: translateY(-1px);
 }
 
@@ -95,7 +99,6 @@
     var(--color-action),
     var(--color-primary)
   );
-  color: #fff;
 }
 
 .filters-sidebar {
@@ -134,6 +137,12 @@
   margin-bottom: 16px;
 }
 
+.category-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
 .filter-sheet-actions {
   display: flex;
   gap: 12px;
@@ -152,6 +161,10 @@
 @media (min-width: 768px) {
   .category-content {
     grid-template-columns: 260px 1fr;
+  }
+
+  .category-actions-bar {
+    padding: 12px 20px;
   }
 
   .filters-sidebar {

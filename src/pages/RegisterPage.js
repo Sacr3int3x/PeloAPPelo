@@ -40,6 +40,7 @@ function RegisterPage() {
   const [error, setError] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const locationOptions = useMemo(() => {
     const set = new Set();
@@ -49,7 +50,7 @@ function RegisterPage() {
     return Array.from(set).sort();
   }, []);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!fullName.trim() || !username.trim()) {
@@ -72,7 +73,8 @@ function RegisterPage() {
       setError("Debes aceptar los términos para continuar.");
       return;
     }
-    const result = registerUser({
+    setSubmitting(true);
+    const result = await registerUser({
       email,
       password,
       name: fullName,
@@ -80,6 +82,7 @@ function RegisterPage() {
       username,
       phone,
     });
+    setSubmitting(false);
     if (!result?.success) {
       setError(result?.error || "No se pudo crear la cuenta.");
       return;
@@ -93,11 +96,7 @@ function RegisterPage() {
     <main className="container page auth-page">
       <div className="auth-card">
         <header className="auth-header">
-          <div className="auth-logo" aria-hidden>
-            <span className="auth-logo-symbol">⇄</span>
-            <span className="auth-logo-text">peloAPPelo</span>
-          </div>
-          <h1 className="auth-title">Únete a peloAPPelo</h1>
+          <h1 className="auth-title">Crea tu cuenta</h1>
           <p className="auth-subtitle">
             Crea tu cuenta para comenzar a intercambiar.
           </p>
@@ -125,7 +124,7 @@ function RegisterPage() {
             </label>
             <input
               id="register-fullname"
-              className="auth-input"
+              className="input auth-input"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Ingresa tu nombre y apellido"
@@ -139,7 +138,7 @@ function RegisterPage() {
             </label>
             <input
               id="register-username"
-              className="auth-input"
+              className="input auth-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Elige tu usuario"
@@ -156,7 +155,7 @@ function RegisterPage() {
             </label>
             <input
               id="register-email"
-              className="auth-input"
+              className="input auth-input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -171,7 +170,7 @@ function RegisterPage() {
             </label>
             <input
               id="register-phone"
-              className="auth-input"
+              className="input auth-input"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -200,7 +199,7 @@ function RegisterPage() {
             <div className="auth-input-wrapper">
               <input
                 id="register-password"
-                className="auth-input"
+                className="input auth-input"
                 type={passwordVisible ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -241,7 +240,7 @@ function RegisterPage() {
             <div className="auth-input-wrapper">
               <input
                 id="register-confirm"
-                className="auth-input"
+                className="input auth-input"
                 type={confirmVisible ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -295,8 +294,8 @@ function RegisterPage() {
             </div>
           )}
 
-          <button className="btn primary" type="submit">
-            Crear cuenta
+          <button className="btn primary block" type="submit" disabled={submitting}>
+            {submitting ? "Creando cuenta..." : "Crear cuenta"}
           </button>
         </form>
 

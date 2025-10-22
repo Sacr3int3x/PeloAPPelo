@@ -1,7 +1,13 @@
+/* Variables de layout */
+:root {
+  --nav-height: 64px;
+}
+
 /* Estilos de layout y estructura */
 .container {
   max-width: 960px;
   margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .row {
@@ -20,7 +26,7 @@
 
 .page {
   padding: 12px;
-  padding-bottom: 12px;
+  padding-bottom: calc(var(--nav-height) + 12px);
 }
 
 /* Grid layouts */
@@ -38,21 +44,32 @@
 
 .grid-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-3);
 }
 
 @media (min-width: 480px) {
   .grid-cards {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 14px;
+    gap: var(--space-4);
+    padding: var(--space-4);
   }
 }
 
 @media (min-width: 768px) {
   .grid-cards {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-5);
+    padding: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-cards {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--space-6);
+    padding: var(--space-6);
   }
 }
 

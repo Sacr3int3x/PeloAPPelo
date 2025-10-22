@@ -1,5 +1,5 @@
-.hero {
-  margin-bottom: clamp(24px, 6vw, 48px);
+.hero{
+margin-bottom: 15px;  
 }
 
 .hero-scroll {
@@ -39,6 +39,7 @@
   flex-direction: column;
   gap: 16px;
   text-align: left;
+  margin-bottom:
 }
 
 .hero-brand {

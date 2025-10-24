@@ -1,23 +1,31 @@
 import { getDb, withDb } from "../store/dataStore.js";
-import {
-  LISTING_UPLOADS_DIR,
-  MAX_LISTING_IMAGES,
-} from "../config.js";
+import { LISTING_UPLOADS_DIR, MAX_LISTING_IMAGES } from "../config.js";
 import { ensureDir, isDataUrl, saveDataUrl } from "../utils/file.js";
 import { toPublicPath } from "../utils/path.js";
 import { prefixedId } from "../utils/id.js";
 import { emitEvent } from "../realtime/socketHub.js";
 
 const allowedStatuses = new Set(["active", "paused", "sold", "finalizado"]);
-const adminAllowedStatuses = new Set(["active", "paused", "sold", "finalizado", "removed", "suspended"]);
+const adminAllowedStatuses = new Set([
+  "active",
+  "paused",
+  "sold",
+  "finalizado",
+  "removed",
+  "suspended",
+]);
 const allowedConditions = new Set(["nuevo", "usado"]);
 
 function ratingSummaryForOwner(ownerId, db) {
-  const reputations = db.reputations?.filter((rep) => rep.toUserId === ownerId) || [];
+  const reputations =
+    db.reputations?.filter((rep) => rep.toUserId === ownerId) || [];
   if (!reputations.length) {
     return { average: 0, count: 0 };
   }
-  const total = reputations.reduce((sum, rep) => sum + Number(rep.rating || 0), 0);
+  const total = reputations.reduce(
+    (sum, rep) => sum + Number(rep.rating || 0),
+    0,
+  );
   const average = Number((total / reputations.length).toFixed(2));
   const lastReview =
     reputations
@@ -108,12 +116,19 @@ export async function listListings({ filters = {}, sort = "new" }) {
   const filtered = db.listings.filter((listing) =>
     matchesFilter(listing, filters, db),
   );
-  const excludedStatuses = new Set(["removed", "suspended"]);
-  const visible = filters.includeModerated
-    ? filtered
-    : filtered.filter(
-        (listing) => !excludedStatuses.has((listing.status || "").toLowerCase()),
-      );
+  const excludedStatuses = new Set([
+    "removed",
+    "suspended",
+    "sold",
+    "finalizado",
+  ]);
+  const visible =
+    filters.includeModerated || filters.includeOwn
+      ? filtered
+      : filtered.filter(
+          (listing) =>
+            !excludedStatuses.has((listing.status || "").toLowerCase()),
+        );
   const sorted = sortListings([...visible], sort);
   return sorted.map((listing) => listingToResponse(listing, db));
 }
@@ -179,6 +194,86 @@ export async function createListing({ ownerId, payload }) {
   return listing;
 }
 
+export async function updateListing({ listingId, ownerId, updates }) {
+  let updated = null;
+  await withDb((db) => {
+    const entry = db.listings.find((listing) => listing.id === listingId);
+    if (!entry) {
+      const error = new Error("Publicación no encontrada.");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (entry.ownerId !== ownerId) {
+      const error = new Error(
+        "No tienes permisos para modificar esta publicación.",
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+
+    if (updates.name !== undefined) entry.name = String(updates.name).trim();
+    if (updates.description !== undefined)
+      entry.description = String(updates.description).trim();
+    if (updates.category !== undefined)
+      entry.category = String(updates.category).trim();
+    if (updates.brand !== undefined) entry.brand = String(updates.brand).trim();
+    if (updates.model !== undefined) entry.model = String(updates.model).trim();
+    if (updates.location !== undefined)
+      entry.location = String(updates.location).trim();
+    if (updates.price !== undefined) {
+      entry.price = Number.parseInt(updates.price, 10) || 0;
+    }
+    if (updates.condition !== undefined) {
+      const nextCondition = String(updates.condition).toLowerCase();
+      if (!allowedConditions.has(nextCondition)) {
+        const error = new Error("Condición no válida.");
+        error.statusCode = 400;
+        throw error;
+      }
+      entry.condition = nextCondition;
+    }
+    if (updates.images !== undefined) {
+      entry.images = updates.images;
+    }
+    entry.updatedAt = new Date().toISOString();
+    updated = entry;
+  });
+
+  const db = await getDb();
+  const listing = listingToResponse(updated, db);
+  emitEvent("listing.updated", { item: listing });
+  return listing;
+}
+
+export async function deleteListing({ listingId, ownerId }) {
+  await withDb((db) => {
+    const entryIndex = db.listings.findIndex(
+      (listing) => listing.id === listingId,
+    );
+    if (entryIndex === -1) {
+      const error = new Error("Publicación no encontrada.");
+      error.statusCode = 404;
+      throw error;
+    }
+    const entry = db.listings[entryIndex];
+    if (entry.ownerId !== ownerId) {
+      const error = new Error(
+        "No tienes permisos para eliminar esta publicación.",
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+    if (entry.status !== "finalizado" && entry.status !== "sold") {
+      const error = new Error(
+        "Solo se pueden eliminar publicaciones finalizadas o vendidas.",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+    db.listings.splice(entryIndex, 1);
+  });
+}
+
 export async function updateListingStatus({ listingId, ownerId, status }) {
   if (!allowedStatuses.has(status)) {
     const error = new Error("Estado inválido.");
@@ -194,7 +289,9 @@ export async function updateListingStatus({ listingId, ownerId, status }) {
       throw error;
     }
     if (entry.ownerId !== ownerId) {
-      const error = new Error("No tienes permisos para modificar esta publicación.");
+      const error = new Error(
+        "No tienes permisos para modificar esta publicación.",
+      );
       error.statusCode = 403;
       throw error;
     }
@@ -220,7 +317,8 @@ export async function adminUpdateListing({ listingId, updates }) {
     if (updates.name !== undefined) entry.name = String(updates.name).trim();
     if (updates.description !== undefined)
       entry.description = String(updates.description).trim();
-    if (updates.category !== undefined) entry.category = String(updates.category).trim();
+    if (updates.category !== undefined)
+      entry.category = String(updates.category).trim();
     if (updates.brand !== undefined) entry.brand = String(updates.brand).trim();
     if (updates.model !== undefined) entry.model = String(updates.model).trim();
     if (updates.location !== undefined)

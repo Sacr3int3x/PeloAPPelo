@@ -1,5 +1,21 @@
 :root {
-  /* Colors */
+  /* Color system */
+  --color-background: #f3f6fb;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f1f7fb;
+  --color-border: #dde6ef;
+  --color-border-strong: #c3d2df;
+  --color-text: #0f1f35;
+  --color-text-muted: #62728b;
+  --color-primary: #1089c6;
+  --color-primary-strong: #0a70a6;
+  --color-primary-soft: #d8ecff;
+  --color-accent: #ea722f;
+  --color-accent-soft: #ffe4d3;
+  --color-action: #0096ff;
+  --color-danger: #ef4444;
+
+  /* Color scales */
   --color-primary-50: #f0f9ff;
   --color-primary-100: #e0f2fe;
   --color-primary-200: #bae6fd;
@@ -22,12 +38,15 @@
   --color-neutral-800: #1e293b;
   --color-neutral-900: #0f172a;
 
-  --color-background: #ffffff;
-  --color-surface: #f8fafc;
+  /* Status colors */
   --color-error: #ef4444;
   --color-success: #10b981;
+  --color-success-soft: #ecfdf5;
   --color-warning: #f59e0b;
+  --color-warning-soft: #fef3c7;
   --color-info: #3b82f6;
+  --color-info-soft: #eff6ff;
+  --color-accent-soft: #fff7ed;
 
   /* Typography */
   --font-family-sans: "Inter", system-ui, -apple-system, sans-serif;
@@ -101,4 +120,11 @@
   --z-40: 40;
   --z-50: 50;
   --z-auto: auto;
+
+  /* Layout */
+  --transition-base: 150ms ease;
+  --layout-max-width: 1040px;
+  --layout-page-padding: clamp(16px, 4vw, 32px);
+  --layout-gap: clamp(16px, 2vw, 24px);
+  --nav-height: 64px;
 }

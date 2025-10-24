@@ -50,6 +50,16 @@ function toConversationResponse(conversation, db, currentUserId = null) {
     .map((userId) => db.users.find((user) => user.id === userId))
     .filter(Boolean);
   const participantEmails = participants.map((user) => user.email);
+
+  // Incluir datos completos de participantes con avatar
+  const participantsData = participants.map((user) => ({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    username: user.username,
+    avatar: user.avatar || null,
+  }));
+
   const transaction = db.transactions.find(
     (tx) => tx.conversationId === conversation.id,
   );
@@ -66,6 +76,7 @@ function toConversationResponse(conversation, db, currentUserId = null) {
         ownerId: listing.ownerId,
       }))(),
     participants: participantEmails,
+    participants_data: participantsData,
     messages: conversation.messages.map((message) => {
       const sender = db.users.find((user) => user.id === message.senderId);
       return {
@@ -91,7 +102,7 @@ function isBlocked(db, ownerId, targetId) {
 export async function listConversationsForUser(userId) {
   const db = await getDb();
   const conversations = db.conversations.filter((conv) =>
-    conv.participants.includes(userId),
+    conv.participants?.includes(userId),
   );
   const blocked = db.blocked
     .filter((entry) => entry.ownerId === userId)
@@ -158,8 +169,8 @@ export async function startConversation({
     const existing = db.conversations.find(
       (conv) =>
         conv.listingId === listingId &&
-        conv.participants.includes(fromUser.id) &&
-        conv.participants.includes(toUser.id),
+        conv.participants?.includes(fromUser.id) &&
+        conv.participants?.includes(toUser.id),
     );
 
     const now = new Date().toISOString();
@@ -245,7 +256,10 @@ export async function sendMessage({
       error.statusCode = 404;
       throw error;
     }
-    if (!conversation.participants.includes(sender.id)) {
+    if (
+      !Array.isArray(conversation.participants) ||
+      !conversation.participants.includes(sender.id)
+    ) {
       const error = new Error("No perteneces a esta conversación.");
       error.statusCode = 403;
       throw error;
@@ -324,7 +338,10 @@ export async function removeConversation(conversationId, requesterEmail) {
       (conv) => conv.id === conversationId,
     );
     if (!conversation) return;
-    if (!conversation.participants.includes(requester.id)) {
+    if (
+      !Array.isArray(conversation.participants) ||
+      !conversation.participants.includes(requester.id)
+    ) {
       const error = new Error("No puedes eliminar esta conversación.");
       error.statusCode = 403;
       throw error;
@@ -408,7 +425,11 @@ export async function markMessageAsRead(conversationId, userId) {
       error.statusCode = 404;
       throw error;
     }
-    if (!conversation.participants.includes(userId)) {
+
+    if (
+      !Array.isArray(conversation.participants) ||
+      !conversation.participants.includes(userId)
+    ) {
       const error = new Error("No perteneces a esta conversación.");
       error.statusCode = 403;
       throw error;

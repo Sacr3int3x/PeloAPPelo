@@ -1,4 +1,4 @@
-import { readJsonBody, sendJson } from "../utils/http.js";
+import { sendJson } from "../utils/http.js";
 import { extractToken } from "../utils/auth.js";
 import { requireUser } from "../services/authService.js";
 import {
@@ -29,8 +29,9 @@ export async function listMine({ req, res }) {
 export async function start({ req, res }) {
   const token = extractToken(req);
   const user = await requireUser(token);
-  const body = await readJsonBody(req);
-  const { to, listingId, initialMessage, initialAttachments } = body || {};
+  const body = req.body || {}; // Usar req.body en lugar de readJsonBody
+  const { to, listingId, initialMessage, initialAttachments } = body;
+
   if (!to) {
     const error = new Error("Debes indicar el destinatario.");
     error.statusCode = 400;
@@ -50,8 +51,8 @@ export async function sendMessage({ req, res, params }) {
   const token = extractToken(req);
   const user = await requireUser(token);
   const [conversationId] = params;
-  const body = await readJsonBody(req);
-  const { message, attachments } = body || {};
+  const body = req.body || {}; // Usar req.body en lugar de readJsonBody
+  const { message, attachments } = body;
   const conversation = await sendMessageService({
     conversationId,
     senderEmail: user.email,
@@ -80,8 +81,8 @@ export async function remove({ req, res, params }) {
 export async function block({ req, res }) {
   const token = extractToken(req);
   const user = await requireUser(token);
-  const body = await readJsonBody(req);
-  const { target } = body || {};
+  const body = req.body || {}; // Usar req.body en lugar de readJsonBody
+  const { target } = body;
   if (!target) {
     const error = new Error("Debes indicar el usuario a bloquear.");
     error.statusCode = 400;
@@ -94,8 +95,8 @@ export async function block({ req, res }) {
 export async function unblock({ req, res }) {
   const token = extractToken(req);
   const user = await requireUser(token);
-  const body = await readJsonBody(req);
-  const { target } = body || {};
+  const body = req.body || {}; // Usar req.body en lugar de readJsonBody
+  const { target } = body;
   if (!target) {
     const error = new Error("Debes indicar el usuario a desbloquear.");
     error.statusCode = 400;
@@ -111,17 +112,4 @@ export async function markAsRead({ req, res, params }) {
   const [conversationId] = params;
   const conversation = await markMessageAsRead(conversationId, user.id);
   sendJson(res, 200, { conversation });
-}
-
-export async function getBlockedUsers({ req, res }) {
-  const token = extractToken(req);
-  const user = await requireUser(token);
-  const { blockedTargets } = await listConversationsForUser(user.id);
-  
-  sendJson(res, 200, { 
-    user: {
-      ...user,
-      blocked: blockedTargets || []
-    }
-  });
 }

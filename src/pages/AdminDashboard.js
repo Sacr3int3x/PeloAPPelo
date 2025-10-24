@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi";
 import "../styles/CategoryPage.css";
-import "../styles/Modal.css";
 import Select from "../components/Select/Select";
 import {
   fetchAdminAudit,
@@ -15,7 +14,6 @@ import {
   updateAdminListing,
   updateAdminUser,
 } from "../services/adminApi";
-import { apiRequest } from "../services/api";
 import { fetchAdminReputations } from "../services/transactions";
 import "../styles/AdminDashboard.css";
 
@@ -176,15 +174,6 @@ function AdminDashboard() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState("overview");
-  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-  const [newUser, setNewUser] = useState({
-    email: "",
-    name: "",
-    password: "",
-    role: "user",
-    location: "",
-    phone: "",
-  });
 
   const {
     state: overview,
@@ -658,132 +647,8 @@ function AdminDashboard() {
     </>
   );
 
-  const handleCreateUser = async () => {
-    try {
-      const response = await apiRequest("/admin/users", {
-        method: "POST",
-        token,
-        data: newUser,
-      });
-      
-      setUsersData(prev => ({
-        ...prev,
-        list: [response.user, ...prev.list],
-        total: prev.total + 1
-      }));
-      
-      setShowCreateUserModal(false);
-      setNewUser({
-        email: "",
-        name: "",
-        password: "",
-        role: "user",
-        location: "",
-        phone: "",
-      });
-    } catch (error) {
-      setUsersError(error?.message || "No se pudo crear el usuario");
-    }
-  };
-
   const renderUsers = () => (
     <section className="admin-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <button 
-          type="button" 
-          className="btn primary" 
-          onClick={() => setShowCreateUserModal(true)}
-        >
-          Crear Usuario
-        </button>
-      </div>
-
-      {showCreateUserModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Crear Nuevo Usuario</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleCreateUser();
-            }}>
-              <div className="form-group">
-                <label>Email *</label>
-                <input
-                  type="email"
-                  className="input"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Contraseña *</label>
-                <input
-                  type="password"
-                  className="input"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Nombre</label>
-                <input
-                  type="text"
-                  className="input"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="form-group">
-                <label>Rol</label>
-                <select
-                  className="input"
-                  value={newUser.role}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
-                >
-                  {roleOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Ubicación</label>
-                <input
-                  type="text"
-                  className="input"
-                  value={newUser.location}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, location: e.target.value }))}
-                />
-              </div>
-              <div className="form-group">
-                <label>Teléfono</label>
-                <input
-                  type="text"
-                  className="input"
-                  value={newUser.phone}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, phone: e.target.value }))}
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="btn primary">
-                  Crear Usuario
-                </button>
-                <button 
-                  type="button" 
-                  className="btn outline"
-                  onClick={() => setShowCreateUserModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       <form
         className="admin-filters"
         onSubmit={(event) => {

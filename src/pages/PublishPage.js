@@ -13,18 +13,34 @@ function PublishPage() {
   const nav = useNavigate();
   const { create } = useData();
 
-  const [formData, setFormData] = useState({
-    category: "Vehículo",
-    name: "",
-    brand: "",
-    model: "",
-    location: user?.location || "",
-    price: "",
-    description: "",
-    condition: "nuevo",
+  // Recuperar datos guardados o usar valores iniciales
+  const [formData, setFormData] = useState(() => {
+    const savedData = localStorage.getItem("publishFormData");
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      // Asegurar que la ubicación del usuario actual tenga prioridad
+      return {
+        ...parsed,
+        location: user?.location || parsed.location || "",
+      };
+    }
+    return {
+      category: "Vehículo",
+      name: "",
+      brand: "",
+      model: "",
+      location: user?.location || "",
+      price: "",
+      description: "",
+      condition: "nuevo",
+    };
   });
 
-  const [photos, setPhotos] = useState([]);
+  // Recuperar fotos guardadas o inicializar array vacío
+  const [photos, setPhotos] = useState(() => {
+    const savedPhotos = localStorage.getItem("publishFormPhotos");
+    return savedPhotos ? JSON.parse(savedPhotos) : [];
+  });
   const [photoError, setPhotoError] = useState("");
   const [step, setStep] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState("premium");
@@ -99,13 +115,18 @@ function PublishPage() {
     const selected = Array.from(fileList).slice(0, remainingSlots);
     try {
       const dataUrls = await Promise.all(selected.map(toDataUrl));
-      setPhotos((prev) => [
-        ...prev,
-        ...dataUrls.map((src) => ({
-          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          src,
-        })),
-      ]);
+      setPhotos((prev) => {
+        const newPhotos = [
+          ...prev,
+          ...dataUrls.map((src) => ({
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            src,
+          })),
+        ];
+        // Guardar en localStorage
+        localStorage.setItem("publishFormPhotos", JSON.stringify(newPhotos));
+        return newPhotos;
+      });
       setPhotoError("");
       setFeedback("");
       clearError("photos");
@@ -139,7 +160,12 @@ function PublishPage() {
   };
 
   const setField = (k, v) => {
-    setFormData((prev) => ({ ...prev, [k]: v }));
+    setFormData((prev) => {
+      const newData = { ...prev, [k]: v };
+      // Guardar en localStorage
+      localStorage.setItem("publishFormData", JSON.stringify(newData));
+      return newData;
+    });
     clearError(k);
     setFeedback("");
   };
@@ -235,9 +261,15 @@ function PublishPage() {
     [],
   );
 
+  const clearStoredData = useCallback(() => {
+    localStorage.removeItem("publishFormData");
+    localStorage.removeItem("publishFormPhotos");
+  }, []);
+
   const finishLoading = useCallback(() => {
     if (!pendingPayload) {
       setShowLoader(false);
+      clearStoredData();
       setTimeout(() => {
         nav("/");
       }, 500);
@@ -248,6 +280,7 @@ function PublishPage() {
     create(payload).then((result) => {
       setShowLoader(false);
       if (result?.success) {
+        clearStoredData();
         setTimeout(() => {
           nav("/");
         }, 500);
@@ -257,7 +290,7 @@ function PublishPage() {
         setFeedback("No se pudo publicar el anuncio. Inténtalo nuevamente.");
       }
     });
-  }, [create, nav, pendingPayload]);
+  }, [create, nav, pendingPayload, clearStoredData]);
 
   const goNext = () => {
     if (step === 1) {
@@ -275,7 +308,8 @@ function PublishPage() {
     setStep((s) => Math.max(1, s - 1));
   };
 
-  const previewImages = photos.length > 0 ? photos.map((p) => p.src) : ["/images/placeholder.jpg"];
+  const previewImages =
+    photos.length > 0 ? photos.map((p) => p.src) : ["/images/placeholder.jpg"];
 
   return (
     <main className="container page publish-page">
@@ -303,7 +337,8 @@ function PublishPage() {
         </div>
         <h1 className="publish-title">Crear nuevo anuncio</h1>
         <p className="publish-subtitle">
-          Completa la información del producto y agrega fotos atractivas para destacar tu publicación.
+          Completa la información del producto y agrega fotos atractivas para
+          destacar tu publicación.
         </p>
       </section>
 
@@ -313,19 +348,23 @@ function PublishPage() {
             <div className="publish-section">
               <h2 className="publish-section-title">¿Qué estás ofreciendo?</h2>
               <div className="publish-category-group">
-                {["Vehículo", "Celular", "Electrónica", "Muebles", "Otros"].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    className={`publish-category ${formData.category === option ? "active" : ""}`}
-                    onClick={() => setField("category", option)}
-                  >
-                    {option}
-                  </button>
-                ))}
+                {["Vehículo", "Celular", "Electrónica", "Muebles", "Otros"].map(
+                  (option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`publish-category ${formData.category === option ? "active" : ""}`}
+                      onClick={() => setField("category", option)}
+                    >
+                      {option}
+                    </button>
+                  ),
+                )}
               </div>
               <div className="publish-grid">
-                <div className={`publish-location ${errors.location ? "has-error" : ""}`}>
+                <div
+                  className={`publish-location ${errors.location ? "has-error" : ""}`}
+                >
                   <span className="label">Ubicación</span>
                   <div className="publish-location-value">
                     {formData.location || "Agrega tu ubicación desde tu perfil"}
@@ -335,20 +374,28 @@ function PublishPage() {
                       Actualizar ubicación
                     </Link>
                   )}
-                  {errors.location && <span className="field-error">{errors.location}</span>}
+                  {errors.location && (
+                    <span className="field-error">{errors.location}</span>
+                  )}
                 </div>
                 <label className="publish-field">
                   <span className="label">Título</span>
                   <input
                     className={`input ${errors.name ? "input-error" : ""}`}
                     value={formData.name}
-                    onChange={(e) => setField("name", e.target.value.slice(0, 60))}
+                    onChange={(e) =>
+                      setField("name", e.target.value.slice(0, 60))
+                    }
                     placeholder="Ej: Toyota Corolla 2020 impecable"
                     maxLength={60}
                     required
                   />
-                  <span className="field-hint">{60 - formData.name.length} caracteres disponibles</span>
-                  {errors.name && <span className="field-error">{errors.name}</span>}
+                  <span className="field-hint">
+                    {60 - formData.name.length} caracteres disponibles
+                  </span>
+                  {errors.name && (
+                    <span className="field-error">{errors.name}</span>
+                  )}
                 </label>
               </div>
             </div>
@@ -378,7 +425,9 @@ function PublishPage() {
                   options={models.map((m) => ({ value: m, label: m }))}
                   placeholder="Selecciona un modelo"
                 />
-                <div className={`publish-field ${errors.condition ? "has-error" : ""}`}>
+                <div
+                  className={`publish-field ${errors.condition ? "has-error" : ""}`}
+                >
                   <Select
                     label="Condición"
                     name="condition"
@@ -405,7 +454,9 @@ function PublishPage() {
                     placeholder="Ej: 9500"
                     required
                   />
-                  {errors.price && <span className="field-error">{errors.price}</span>}
+                  {errors.price && (
+                    <span className="field-error">{errors.price}</span>
+                  )}
                 </label>
               </div>
               <label className="publish-field">
@@ -414,7 +465,9 @@ function PublishPage() {
                   className={`input ${errors.description ? "input-error" : ""}`}
                   rows="5"
                   value={formData.description}
-                  onChange={(e) => setField("description", e.target.value.slice(0, 400))}
+                  onChange={(e) =>
+                    setField("description", e.target.value.slice(0, 400))
+                  }
                   placeholder="Describe el estado, accesorios incluidos y cualquier detalle relevante..."
                   maxLength={400}
                   required
@@ -422,7 +475,9 @@ function PublishPage() {
                 <span className="field-hint">
                   {400 - formData.description.length} caracteres disponibles
                 </span>
-                {errors.description && <span className="field-error">{errors.description}</span>}
+                {errors.description && (
+                  <span className="field-error">{errors.description}</span>
+                )}
               </label>
             </div>
 
@@ -452,7 +507,9 @@ function PublishPage() {
                 {photos.length} de 5 fotos usadas
               </span>
               {(photoError || errors.photos) && (
-                <span className="field-error">{photoError || errors.photos}</span>
+                <span className="field-error">
+                  {photoError || errors.photos}
+                </span>
               )}
               {!!photos.length && (
                 <div className="publish-photo-grid">
@@ -497,7 +554,9 @@ function PublishPage() {
 
         {step === 2 && (
           <div className="publish-section">
-            <h2 className="publish-section-title">Elige el nivel de publicación</h2>
+            <h2 className="publish-section-title">
+              Elige el nivel de publicación
+            </h2>
             <div className="publish-plan-grid">
               {plans.map((plan) => (
                 <button
@@ -564,7 +623,10 @@ function PublishPage() {
                 </div>
                 <div className="publish-preview-card">
                   <strong>Plan</strong>
-                  <span>{plans.find((p) => p.id === selectedPlan)?.title || "Gratis"}</span>
+                  <span>
+                    {plans.find((p) => p.id === selectedPlan)?.title ||
+                      "Gratis"}
+                  </span>
                 </div>
               </div>
               <div className="publish-preview-card">

@@ -1,6 +1,6 @@
 import { sendJson } from "../utils/http.js";
 import { extractToken } from "../utils/auth.js";
-import { requireUser, createUser as createUserService } from "../services/authService.js";
+import { requireUser } from "../services/authService.js";
 import { ADMIN_EMAILS } from "../config.js";
 import { getDb, withDb } from "../store/dataStore.js";
 import { listingToResponse } from "../services/listingService.js";
@@ -401,34 +401,6 @@ export async function updateListing({ req, res, params }) {
   });
 
   sendJson(res, 200, { item: result });
-}
-
-export async function createUser({ req, res }) {
-  const token = extractToken(req);
-  const admin = await requireUser(token);
-  ensureAdmin(admin);
-  
-  const body = await readJsonBody(req);
-  const { email, password, name, location, phone, role } = body || {};
-
-  const user = await createUserService({
-    email,
-    password,
-    name,
-    location,
-    phone,
-    role
-  });
-
-  await recordAudit({
-    userId: admin.id,
-    action: "user.create",
-    targetType: "user",
-    targetId: user.id,
-    details: { email, name, location, phone, role }
-  });
-
-  sendJson(res, 201, { user: sanitizeUser(user) });
 }
 
 export async function auditLogs({ req, res, query }) {

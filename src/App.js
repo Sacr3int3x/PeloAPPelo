@@ -16,9 +16,8 @@ import LoadingPage from "./pages/LoadingPage";
 
 // Context Providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { DataProvider, useData } from "./context/DataContext";
+import { DataProvider } from "./context/DataContext";
 import { MessageProvider } from "./context/MessageContext";
-import { BlockProvider } from "./context/BlockContext";
 
 // Lazy loaded pages
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -36,7 +35,10 @@ const FavsPage = lazy(() => import("./pages/FavsPage"));
 const InboxPage = lazy(() => import("./pages/InboxPage"));
 const ProfileListingsPage = lazy(() => import("./pages/ProfileListingsPage"));
 const SwapPage = lazy(() => import("./pages/SwapPage"));
+const SwapDetailPage = lazy(() => import("./pages/SwapDetailPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const EditListingPage = lazy(() => import("./pages/EditListingPage"));
+const HelpCenterPage = lazy(() => import("./pages/HelpCenterPage"));
 
 // Auth Guard Component
 function RequireAuth({ children, admin }) {
@@ -61,10 +63,6 @@ function RequireAuth({ children, admin }) {
 
 // App Shell
 function Shell() {
-  const data = useData();
-  const auth = useAuth();
-  const user = auth?.user;
-
   return (
     <>
       <Header />
@@ -120,7 +118,7 @@ function Shell() {
             }
           />
           <Route
-            path="/profile/billing-details"
+            path="/billing"
             element={
               <RequireAuth>
                 <BillingDetails />
@@ -128,7 +126,7 @@ function Shell() {
             }
           />
           <Route
-            path="/profile/reputation-details"
+            path="/reputation"
             element={
               <RequireAuth>
                 <ReputationDetails />
@@ -137,6 +135,14 @@ function Shell() {
           />
           <Route
             path="/swap/:id"
+            element={
+              <RequireAuth>
+                <SwapDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/propose-swap/:id"
             element={
               <RequireAuth>
                 <SwapPage />
@@ -159,6 +165,15 @@ function Shell() {
               </RequireAuth>
             }
           />
+          <Route
+            path="/publicar/:id"
+            element={
+              <RequireAuth>
+                <EditListingPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="/help" element={<HelpCenterPage />} />
         </Routes>
       </Suspense>
       <BottomNav />
@@ -176,13 +191,11 @@ export default function App() {
       }}
     >
       <AuthProvider>
-        <BlockProvider>
-          <DataProvider>
-            <MessageProvider>
-              <Shell />
-            </MessageProvider>
-          </DataProvider>
-        </BlockProvider>
+        <DataProvider>
+          <MessageProvider>
+            <Shell />
+          </MessageProvider>
+        </DataProvider>
       </AuthProvider>
     </HashRouter>
   );

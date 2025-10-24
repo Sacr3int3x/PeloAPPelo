@@ -13,21 +13,37 @@ function Hero() {
     () => [
       {
         title: "PeloAPelo",
-        text: "La forma simple de intercambiar o vender tus artículos. Publica rápido, negocia directo y encuentra tu mejor trato.",
+        text: "La plataforma líder para intercambios seguros. Vende, compra o intercambia con nuestra comunidad verificada.",
         background: "var(--color-primary-soft)",
-        ctas: [],
-    },
-    {
-      title: "Publica Gratis",
-      text: "Sube hasta 5 fotos, agrega detalles y comparte.",
-      background: "var(--color-surface)",
-      ctas: [{ to: "/publish", label: "Publicar ahora", primary: true }],
-    },
-    {
-      title: 'Sin bloqueos por "cambio"',
-        text: '¿Cansado de restricciones molestas? Aquí puedes escribir "aceptas cambio? donde gustes" sin bloqueos automáticos ni filtros molestos.',
-        background: "var(--color-surface-subtle)",
-        ctas: [],
+        ctas: [{ to: "/register", label: "Comenzar ahora", primary: true }],
+      },
+      {
+        title: "Comunidad Verificada",
+        text: "Tu seguridad es nuestra prioridad. Todos los usuarios pasan por un riguroso proceso de verificación de identidad con foto personal y documento oficial.",
+        background: "var(--color-success-soft)",
+        ctas: [
+          { to: "/register", label: "Verificar mi cuenta", primary: true },
+        ],
+      },
+      {
+        title: "Publica en Segundos",
+        text: "Sube hasta 5 fotos, describe tu artículo y elige si quieres vender o intercambiar. Sin complicaciones, sin esperas.",
+        background: "var(--color-accent-soft)",
+        ctas: [{ to: "/publish", label: "Crear publicación", primary: true }],
+      },
+      {
+        title: "Chat Integrado",
+        text: "Negocia directamente con otros usuarios a través de nuestro chat seguro. Coordina los detalles del intercambio o venta sin salir de la app.",
+        background: "var(--color-info-soft)",
+        ctas: [{ to: "/inbox", label: "Ver mensajes", primary: true }],
+      },
+      {
+        title: "Sistema de Reputación",
+        text: "Construye tu reputación con cada intercambio exitoso. Los usuarios mejor valorados obtienen más visibilidad y confianza en la comunidad.",
+        background: "var(--color-warning-soft)",
+        ctas: [
+          { to: "/reputation", label: "Ver mi reputación", primary: true },
+        ],
       },
     ],
     [],
@@ -35,20 +51,10 @@ function Hero() {
 
   const baseLength = slides.length;
   const initialIndex = baseLength; // start in the middle block
-  const loopSlides = useMemo(
-    () => [...slides, ...slides, ...slides],
-    [slides],
-  );
+  const loopSlides = useMemo(() => [...slides, ...slides, ...slides], [slides]);
   const [virtualIndex, setVirtualIndex] = useState(initialIndex);
 
-  // Auto-avance cada 8 segundos
-  useEffect(() => {
-    const timer = setInterval(() => {
-      smoothRef.current = true;
-      setVirtualIndex((i) => i + 1);
-    }, 8000);
-    return () => clearInterval(timer);
-  }, [baseLength]);
+  // Eliminamos el auto-scroll para mejor experiencia de usuario
 
   // Mover el slide activo
   useEffect(() => {
@@ -63,9 +69,12 @@ function Hero() {
     if (programmaticTimerRef.current) {
       clearTimeout(programmaticTimerRef.current);
     }
-    programmaticTimerRef.current = setTimeout(() => {
-      programmaticRef.current = false;
-    }, behavior === "smooth" ? 500 : 0);
+    programmaticTimerRef.current = setTimeout(
+      () => {
+        programmaticRef.current = false;
+      },
+      behavior === "smooth" ? 500 : 0,
+    );
     return () => {
       if (programmaticTimerRef.current) {
         clearTimeout(programmaticTimerRef.current);

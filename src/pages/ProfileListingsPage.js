@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { HiOutlineArrowLeft } from "react-icons/hi";
+import { HiOutlineArrowLeft, HiSearch, HiPencil } from "react-icons/hi";
 import "../styles/CategoryPage.css";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
@@ -25,6 +25,7 @@ function ProfileListingsPage() {
   const data = useData();
   const navigate = useNavigate();
   const updateStatus = data?.updateStatus || (() => {});
+  const deleteListing = data?.deleteListing || (() => {});
 
   const listings = useMemo(() => {
     if (!user) return [];
@@ -32,6 +33,15 @@ function ProfileListingsPage() {
   }, [data, user]);
 
   const [feedback, setFeedback] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredListings = useMemo(() => {
+    return listings.filter(
+      (listing) =>
+        listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        listing.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [listings, searchTerm]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -39,22 +49,69 @@ function ProfileListingsPage() {
     return () => clearTimeout(t);
   }, [feedback]);
 
+  // Restablecer la posición de desplazamiento al montar el componente
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const [confirmAction, setConfirmAction] = useState({
+    show: false,
+    action: null,
+  });
+
   const handleStatusChange = async (listingId, nextStatus) => {
     const promptMap = {
       active: "¿Deseas reactivar esta publicación?",
       paused: "¿Deseas pausar temporalmente esta publicación?",
       sold: "¿Marcar como finalizada? No aparecerá más en las búsquedas.",
     };
-    const question = promptMap[nextStatus] || "¿Confirmas esta acción?";
-    if (!window.confirm(question)) return;
-    const result = await updateStatus(listingId, nextStatus);
-    if (result?.success) {
-      setFeedback("Estado actualizado correctamente.");
-    } else if (result?.error) {
-      setFeedback(result.error);
-    } else {
-      setFeedback("No se pudo actualizar el estado.");
+    const message = promptMap[nextStatus] || "¿Confirmas esta acción?";
+    setConfirmAction({
+      show: true,
+      action: async () => {
+        const result = await updateStatus(listingId, nextStatus);
+        if (result?.success) {
+          setFeedback("Estado actualizado correctamente.");
+        } else if (result?.error) {
+          setFeedback(result.error);
+        } else {
+          setFeedback("No se pudo actualizar el estado.");
+        }
+        setConfirmAction({ show: false, action: null });
+      },
+      message,
+      listingId,
+      nextStatus,
+    });
+  };
+
+  const handleEdit = (listing) => {
+    console.log("Editando publicación:", listing);
+    if (!listing.id) {
+      setFeedback("Error: No se puede editar la publicación");
+      return;
     }
+    navigate(`/publicar/${listing.id}`);
+  };
+
+  const handleDelete = async (listingId) => {
+    setConfirmAction({
+      show: true,
+      action: async () => {
+        const result = await deleteListing(listingId);
+        if (result?.success) {
+          setFeedback("Publicación eliminada correctamente.");
+        } else if (result?.error) {
+          setFeedback(result.error);
+        } else {
+          setFeedback("No se pudo eliminar la publicación.");
+        }
+        setConfirmAction({ show: false, action: null });
+      },
+      message:
+        "¿Estás seguro que deseas eliminar esta publicación? Esta acción no se puede deshacer.",
+      listingId,
+    });
   };
 
   if (!user) {
@@ -86,9 +143,43 @@ function ProfileListingsPage() {
 
         {feedback && <div className="profile-feedback">{feedback}</div>}
 
-        {listings.length ? (
+        {confirmAction.show && (
+          <div className="profile-confirm-overlay">
+            <div className="profile-confirm-dialog">
+              <p className="profile-confirm-message">{confirmAction.message}</p>
+              <div className="profile-confirm-actions">
+                <button
+                  className="status-btn outline"
+                  onClick={() =>
+                    setConfirmAction({ show: false, action: null })
+                  }
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="status-btn primary"
+                  onClick={confirmAction.action}
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="profile-listings-search">
+          <HiSearch />
+          <input
+            type="text"
+            placeholder="Buscar en mis publicaciones..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {filteredListings.length ? (
           <div className="profile-listing-list">
-            {listings.map((listing) => (
+            {filteredListings.map((listing) => (
               <article key={listing.id} className="profile-listing-row">
                 <img
                   src={listing.images?.[0] || "/images/placeholder.jpg"}
@@ -121,6 +212,15 @@ function ProfileListingsPage() {
                   </p>
                 </div>
                 <div className="profile-status-actions">
+                  <button
+                    type="button"
+                    className="status-btn edit"
+                    onClick={() => handleEdit(listing)}
+                    title="Editar descripción e imágenes"
+                  >
+                    <HiPencil size={18} style={{ marginRight: 4 }} />
+                    Editar
+                  </button>
                   {listing.status !== "active" && (
                     <button
                       type="button"
@@ -148,6 +248,17 @@ function ProfileListingsPage() {
                       onClick={() => handleStatusChange(listing.id, "sold")}
                     >
                       Finalizar
+                    </button>
+                  )}
+                  {["sold", "finalizado", "finalized"].includes(
+                    listing.status,
+                  ) && (
+                    <button
+                      type="button"
+                      className="status-btn danger"
+                      onClick={() => handleDelete(listing.id)}
+                    >
+                      Eliminar
                     </button>
                   )}
                 </div>

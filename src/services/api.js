@@ -42,6 +42,14 @@ export async function apiRequest(
     signal,
   });
 
+  // Si es una respuesta DELETE exitosa sin contenido, retornar un objeto vacío
+  if (
+    response.status === 204 ||
+    response.headers.get("content-length") === "0"
+  ) {
+    return {};
+  }
+
   const contentType = response.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
   const payload = isJson ? await response.json() : null;

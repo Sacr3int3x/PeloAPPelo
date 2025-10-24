@@ -1,20 +1,3 @@
 .page-transition-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 180;
-  background: rgba(16, 137, 198, 0.08);
-  animation: page-transition-fade 0.42s ease forwards;
-}
-
-@keyframes page-transition-fade {
-  0% {
-    opacity: 0;
-  }
-  35% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  display: none; /* Desactivamos completamente la animación */
 }

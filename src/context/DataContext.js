@@ -34,6 +34,7 @@ export function DataProvider({ children }) {
   const [favorites, setFavorites] = useState(() => new Set());
   const [favoriteItems, setFavoriteItems] = useState(() => new Map());
   const [searches, setSearches] = useState(() => read(LS.searches, []));
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     write(LS.searches, searches);
@@ -43,15 +44,7 @@ export function DataProvider({ children }) {
     setLoading(true);
     try {
       const response = await apiRequest("/listings");
-      let listings = response.items || response.listings || [];
-      
-      // Si no hay listados, cargar los demos
-      if (listings.length === 0) {
-        const { DEMO_LISTINGS } = await import('../data/demo');
-        listings = DEMO_LISTINGS;
-      }
-      
-      const normalized = listings.map(withNormalizedImages);
+      const normalized = (response.items || []).map(withNormalizedImages);
       setItems(normalized);
     } catch (error) {
       console.error("No se pudieron cargar las publicaciones", error);
@@ -80,32 +73,44 @@ export function DataProvider({ children }) {
     }
   }, [token]);
 
+  // Detectar cambio de usuario y recargar datos
   useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
+    const userId = user?.id || null;
 
-  // Efecto para manejar actualizaciones de bloqueos
+    if (userId !== currentUserId) {
+      // El usuario cambió o cerró sesión
+      setCurrentUserId(userId);
+
+      if (!userId) {
+        // Logout: limpiar todo
+        setItems([]);
+        setFavorites(new Set());
+        setFavoriteItems(new Map());
+      } else {
+        // Login o cambio de usuario: recargar datos
+        setItems([]); // Limpiar datos anteriores
+        setFavorites(new Set());
+        setFavoriteItems(new Map());
+        fetchListings();
+        fetchFavorites();
+      }
+    }
+  }, [user?.id, currentUserId, fetchListings, fetchFavorites]);
+
   useEffect(() => {
-    if (!user) return;
-
-    const handleBlockUpdate = () => {
-      // Forzar una actualización de los listados cuando cambian los bloqueos
+    if (!currentUserId) {
       fetchListings();
-    };
-
-    // Suscribirse a eventos de bloqueo
-    const offBlockUpdate = realtime.on('user.blocked', handleBlockUpdate);
-    const offUnblockUpdate = realtime.on('user.unblocked', handleBlockUpdate);
-
-    return () => {
-      offBlockUpdate();
-      offUnblockUpdate();
-    };
-  }, [user, fetchListings]);
+    }
+  }, [fetchListings, currentUserId]);
 
   useEffect(() => {
-    fetchFavorites();
-  }, [fetchFavorites]);
+    if (!currentUserId) {
+      fetchListings();
+    }
+  }, [fetchListings, currentUserId]);
+
+  // Ya no necesitamos este useEffect separado para fetchFavorites
+  // porque se llama desde el useEffect de cambio de usuario
 
   useEffect(() => {
     const handleCreate = (event) => {
@@ -165,44 +170,19 @@ export function DataProvider({ children }) {
   }, []);
 
   const visibleItems = useMemo(() => {
-    const currentUserEmail = user?.email?.toLowerCase();
-    const { blockedUsers } = window.__BLOCK_CONTEXT__ || {};
-
     return items.filter((item) => {
       const status = (item.status || "").toLowerCase();
-      
-      // Primero verificar estados básicos
       if (["removed", "suspended"].includes(status)) return false;
-      
-      const ownerEmail = String(item.ownerEmail || "").toLowerCase();
-
-      // Si no hay usuario logueado, mostrar todas las publicaciones activas
-      if (!currentUserEmail) {
-        return !["sold", "finalizado", "finalized"].includes(status);
-      }
-
-      // Verificar estado de venta
       if (["sold", "finalizado", "finalized"].includes(status)) {
-        // Solo mostrar items finalizados al dueño
-        return ownerEmail === currentUserEmail;
-      }
-
-      // Verificar bloqueos bidireccionales
-      const blockInfo = blockedUsers?.get(ownerEmail);
-      const amIBlockedByOwner = blockedUsers?.get(currentUserEmail)?.direction === 'incoming';
-      
-      if (blockInfo || amIBlockedByOwner) {
-        console.log('Filtrando publicación por bloqueo:', {
-          itemId: item.id,
-          itemName: item.name,
-          owner: ownerEmail,
-          viewer: currentUserEmail,
-          blockDirection: blockInfo?.direction,
-          amIBlockedByOwner
-        });
+        if (!user) return false;
+        const ownerId = String(item.ownerId || "").toLowerCase();
+        const userId = String(user?.id || "").toLowerCase();
+        const ownerEmail = String(item.ownerEmail || "").toLowerCase();
+        const userEmail = String(user?.email || "").toLowerCase();
+        if (ownerId && userId && ownerId === userId) return true;
+        if (ownerEmail && userEmail && ownerEmail === userEmail) return true;
         return false;
       }
-
       return true;
     });
   }, [items, user]);
@@ -263,6 +243,93 @@ export function DataProvider({ children }) {
         return {
           success: false,
           error: error?.message || "No se pudo actualizar el estado.",
+        };
+      }
+    },
+    [token],
+  );
+
+  const deleteListing = useCallback(
+    async (id) => {
+      if (!token) {
+        return {
+          success: false,
+          error: "Debes iniciar sesión.",
+        };
+      }
+      try {
+        const key = String(id);
+        await apiRequest(`/listings/${key}`, {
+          method: "DELETE",
+          token,
+        });
+        setItems((prev) => prev.filter((item) => String(item.id) !== key));
+        setFavoriteItems((prev) => {
+          if (!prev.has(key)) return prev;
+          const next = new Map(prev);
+          next.delete(key);
+          return next;
+        });
+        return { success: true };
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+        return {
+          success: false,
+          error: error?.message || "No se pudo eliminar la publicación.",
+        };
+      }
+    },
+    [token],
+  );
+
+  const updateListing = useCallback(
+    async (id, updates) => {
+      if (!token) {
+        return {
+          success: false,
+          error: "Debes iniciar sesión.",
+        };
+      }
+      try {
+        // Actualizar la publicación con los nuevos datos
+        await apiRequest(`/listings/${id}`, {
+          method: "PATCH",
+          data: {
+            name: updates.name,
+            description: updates.description,
+          },
+          token,
+        });
+
+        // Si hay imágenes nuevas, actualizarlas
+        if (updates.newImages && updates.newImages.length > 0) {
+          const formData = new FormData();
+          updates.newImages.forEach((file) => {
+            formData.append("images", file);
+          });
+
+          await apiRequest(`/listings/${id}/upload`, {
+            method: "POST",
+            body: formData,
+            isFormData: true,
+            token,
+          });
+        }
+
+        const result = await apiRequest(`/listings/${id}`, {
+          method: "GET",
+          token,
+        });
+
+        const updated = withNormalizedImages(result.item);
+        setItems((prev) =>
+          prev.map((item) => (String(item.id) === String(id) ? updated : item)),
+        );
+        return { success: true, item: updated };
+      } catch (error) {
+        return {
+          success: false,
+          error: error?.message || "No se pudo actualizar la publicación.",
         };
       }
     },
@@ -416,6 +483,8 @@ export function DataProvider({ children }) {
       trackSearch,
       searches,
       updateStatus,
+      updateListing,
+      deleteListing,
       refresh: fetchListings,
       user,
     }),
@@ -434,6 +503,8 @@ export function DataProvider({ children }) {
       trackSearch,
       searches,
       updateStatus,
+      updateListing,
+      deleteListing,
       fetchListings,
       user,
     ],

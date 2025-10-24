@@ -9,6 +9,7 @@ const upload = multer({
 });
 
 export const profilePhotoUpload = upload.single("photo");
+export const listingPhotoUpload = upload.array("photos", 5);
 
 export function handleMulter(middleware) {
   return (params) => {

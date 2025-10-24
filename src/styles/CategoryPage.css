@@ -53,9 +53,9 @@
   justify-content: space-between;
   gap: 8px;
   background: var(--color-surface);
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.303);
   border-radius: var(--radius-full);
-  padding: 8px 14px;
+  padding: 5px 12px;
   margin: clamp(10px, 3vw, 16px) 0 0;
 }
 
@@ -73,10 +73,10 @@
 }
 
 .view-toggle {
-  width: 40px;
+  width: 50px;
   height: 30px;
   border: none;
-  background: transparent;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -89,16 +89,12 @@
 
 .view-toggle:hover {
   color: #1089c6;
-  transform: translateY(-1px);
+  ;
 }
 
 .view-toggle.active {
   color: #fff;
-  background: linear-gradient(
-    140deg,
-    var(--color-action),
-    var(--color-primary)
-  );
+  background: var(--color-primary);
 }
 
 .filters-sidebar {
@@ -120,8 +116,41 @@
 }
 
 .grid-cards.list-view {
-  grid-template-columns: 1fr;
-  gap: clamp(16px, 3vw, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .grid-cards.list-view {
+    gap: 1.5rem;
+  }
+}
+
+.grid-cards.list-view .card {
+  width: 100%;
+}
+
+.grid-cards.list-view .card.card--compact {
+  flex-direction: row;
+}
+
+.grid-cards.list-view .card-media {
+  width: 180px;
+  min-width: 180px;
+  padding-top: 180px;
+}
+
+@media (max-width: 640px) {
+  .grid-cards.list-view .card.card--compact {
+    flex-direction: column;
+  }
+
+  .grid-cards.list-view .card-media {
+    width: 100%;
+    padding-top: 75%;
+  }
 }
 
 .no-results {

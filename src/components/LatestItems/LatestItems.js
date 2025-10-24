@@ -6,6 +6,14 @@ import "./LatestItems.css";
 import { useData } from "../../context/DataContext";
 import ErrorBoundary from "../ErrorBoundary/ErrorBoundary";
 
+// Constantes para el diseño
+const CONTAINER_STYLES = {
+  width: "100%",
+  maxWidth: "1200px",
+  margin: "0 auto",
+  padding: "0 1rem",
+};
+
 const mulberry32 = (seed) => {
   let t = seed + 0x6d2b79f5;
   return () => {
@@ -31,7 +39,16 @@ function LatestItemsContent({ limit = 24, shuffleSeed = null }) {
   const items = data?.items;
   const latest = useMemo(() => {
     const source = Array.isArray(items) ? items : [];
-    const ordered = [...source].sort(
+    // Eliminar duplicados basados en id
+    const uniqueItems = source.reduce((acc, current) => {
+      const x = acc.find((item) => item.id === current.id);
+      if (!x) {
+        return acc.concat([current]);
+      }
+      return acc;
+    }, []);
+
+    const ordered = uniqueItems.sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     );
     const list = shuffleSeed ? shuffleBySeed(ordered, shuffleSeed) : ordered;
@@ -50,11 +67,13 @@ function LatestItemsContent({ limit = 24, shuffleSeed = null }) {
   }
 
   return (
-    <section className="latest-items">
+    <section className="latest-items" style={CONTAINER_STYLES}>
       <h2 className="h2">Publicaciones recientes</h2>
-      <div className="grid-cards">
+      <div className="latest-items-grid">
         {latest.map((item) => (
-          <Card key={item.id} item={item} />
+          <div key={item.id} className="latest-item-wrapper">
+            <Card item={item} />
+          </div>
         ))}
       </div>
     </section>

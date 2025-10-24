@@ -1,19 +1,16 @@
-/* Variables de layout */
-:root {
-  --nav-height: 64px;
-}
-
 /* Estilos de layout y estructura */
 .container {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 0 1rem;
+  width: min(100%, var(--layout-max-width));
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--layout-page-padding);
+  padding-right: var(--layout-page-padding);
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--layout-gap);
 }
 
 .grow {
@@ -21,12 +18,12 @@
 }
 
 .gap {
-  gap: 12px;
+  gap: var(--layout-gap);
 }
 
 .page {
-  padding: 12px;
-  padding-bottom: calc(var(--nav-height) + 12px);
+  padding-top: clamp(24px, 4vw, 36px);
+  padding-bottom: calc(clamp(32px, 8vw, 64px) + var(--nav-height));
 }
 
 /* Grid layouts */

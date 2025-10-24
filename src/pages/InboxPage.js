@@ -1,15 +1,38 @@
+// React y hooks
 import React, { useState, useMemo, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+// Iconos
+import {
+  MdBlock,
+  MdFlag,
+  MdCheckCircle,
+  MdDelete,
+  MdAttachFile,
+  MdSend,
+  MdClose,
+  MdInventory2,
+  MdOpenInNew,
+} from "react-icons/md";
+
+// Contextos
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../context/MessageContext";
 import { useData } from "../context/DataContext";
-import { useLocation } from "react-router-dom";
-import RatingForm from "../components/RatingForm/RatingForm";
+
+// Servicios
+import {
+  fetchSwapProposals,
+  deleteSwapProposal,
+} from "../services/transactions";
+
+// Componentes
+import InboxNav from "../components/InboxNav/InboxNav";
+import SwapProposals from "../components/SwapProposals/SwapProposals";
+
+// Estilos
 import "../styles/InboxPage.css";
 import "../styles/seller.css";
-
-// Constante para la imagen por defecto
-const defaultAvatar = "/images/avatars/default.svg";
-
 // Modal de confirmación reutilizable
 const ConfirmModal = ({ open, onClose, onConfirm, text }) => {
   if (!open) return null;
@@ -32,133 +55,181 @@ const ConfirmModal = ({ open, onClose, onConfirm, text }) => {
 
 function InboxPage() {
   // HOOKS Y ESTADOS PRINCIPALES
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const {
     conversations,
-    sendMessage,
-    deleteConversation,
-    blockParticipant,
-    unblockParticipant,
-    completeConversation: completeConversationAction,
-    submitReputation: submitReputationAction,
+    sendMessage: sendMessageAction,
     markConversationAsRead,
-    unreadCount,
+    blockParticipant,
+    deleteConversation,
+    completeConversation,
   } = useMessages();
 
-  const messagesEndRef = React.useRef(null);
   const { byId } = useData();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Estados locales
   const [activeId, setActiveId] = useState(null);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
-
-  // Seleccionar conversación automáticamente si viene en la URL
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const conversationId = params.get("conversation");
-    if (conversationId) {
-      setActiveId(conversationId);
-      // Marcar como leído con un pequeño retraso para asegurar que los datos están cargados
-      setTimeout(() => {
-        markConversationAsRead(conversationId);
-      }, 100);
-    }
-  }, [location.search, markConversationAsRead]);
-
-  // Efecto adicional para marcar como leídos los mensajes cuando se selecciona una conversación
-  useEffect(() => {
-    if (activeId) {
-      markConversationAsRead(activeId);
-    }
-  }, [activeId, markConversationAsRead]);
-
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  // Efecto para resetear el scroll cuando se monta el componente
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  // Efecto para hacer scroll al último mensaje cuando se cambia la conversación
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    scrollToBottom();
-  }, [activeId]); 
-
-  // Scroll cuando llegan nuevos mensajes
-  useEffect(() => {
-    const activeConv = conversations.find((c) => c.id === activeId);
-    if (activeConv?.messages?.length) {
-      scrollToBottom();
-    }
-  }, [activeId, conversations]);
   const [draftAttachments, setDraftAttachments] = useState([]);
+  const [activeTab, setActiveTab] = useState("messages");
+  const [swapProposals, setSwapProposals] = useState([]);
   const [modal, setModal] = useState({
     open: false,
     action: null,
     text: "",
     onConfirm: null,
   });
-  const [messageError, setMessageError] = useState("");
-  const [completePending, setCompletePending] = useState(false);
-  const [completeError, setCompleteError] = useState("");
-  const [ratingPending, setRatingPending] = useState(false);
-  const [ratingFeedback, setRatingFeedback] = useState("");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedConversations, setSelectedConversations] = useState([]);
+
+  // Variables derivadas
   const isMobile = window.innerWidth <= 900;
   const myEmail = user?.email || user?.id;
 
-  const conversationsForUser = useMemo(() => {
-    if (!myEmail) {
-      console.log(
-        "No hay email del usuario, no se pueden mostrar conversaciones",
-      );
-      return [];
+  // Efectos
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const conversationId = params.get("conversation");
+    const tab = params.get("tab");
+
+    // Cambiar a la pestaña especificada en la URL
+    if (tab === "swaps") {
+      setActiveTab("swaps");
+    } else if (tab === "messages") {
+      setActiveTab("messages");
     }
 
-    console.log("Estado de las conversaciones:", {
-      totalConversations: conversations.length,
-      myEmail,
+    if (conversationId) {
+      setActiveId(conversationId);
+      setTimeout(() => {
+        markConversationAsRead(conversationId);
+      }, 100);
+    }
+  }, [location.search, markConversationAsRead]);
+
+  useEffect(() => {
+    if (activeId) {
+      markConversationAsRead(activeId);
+    }
+  }, [activeId, markConversationAsRead]);
+
+  // Cargar propuestas de intercambio
+  useEffect(() => {
+    const loadProposals = async () => {
+      try {
+        if (!token) {
+          console.log("Usuario no autenticado, omitiendo carga de propuestas");
+          return;
+        }
+        const response = await fetchSwapProposals(token);
+        setSwapProposals(response.proposals || []);
+      } catch (error) {
+        console.error("Error al cargar las propuestas:", error);
+        setSwapProposals([]);
+      }
+    };
+
+    if (activeTab === "swaps" && token) {
+      loadProposals();
+    }
+  }, [activeTab, token]);
+
+  // Handler de intercambio (solo eliminar)
+  const handleDeleteSwap = async (proposalId) => {
+    try {
+      await deleteSwapProposal(proposalId, token);
+      setSwapProposals((prev) => prev.filter((p) => p.id !== proposalId));
+    } catch (error) {
+      console.error("Error al eliminar la propuesta:", error);
+      alert("No se pudo eliminar la propuesta. Intenta de nuevo.");
+    }
+  };
+
+  // Funciones de selección y eliminación de conversaciones
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    setSelectedConversations([]);
+  };
+
+  const toggleConversationSelection = (convId) => {
+    setSelectedConversations((prev) => {
+      if (prev.includes(convId)) {
+        return prev.filter((id) => id !== convId);
+      }
+      return [...prev, convId];
     });
+  };
+
+  const handleDeleteSingleConversation = (convId) => {
+    setModal({
+      open: true,
+      action: "delete-conversation",
+      text: "¿Estás seguro de que deseas eliminar esta conversación?",
+      onConfirm: async () => {
+        try {
+          await deleteConversation(convId);
+          if (activeId === convId) {
+            setActiveId(null);
+          }
+        } catch (error) {
+          console.error("Error al eliminar la conversación:", error);
+        } finally {
+          setModal((m) => ({ ...m, open: false }));
+        }
+      },
+    });
+  };
+
+  const handleDeleteSelectedConversations = () => {
+    if (selectedConversations.length === 0) return;
+
+    setModal({
+      open: true,
+      action: "delete-conversations",
+      text: `¿Estás seguro de que deseas eliminar ${selectedConversations.length} conversación(es)?`,
+      onConfirm: async () => {
+        try {
+          await Promise.all(
+            selectedConversations.map((convId) => deleteConversation(convId)),
+          );
+          if (selectedConversations.includes(activeId)) {
+            setActiveId(null);
+          }
+          setSelectedConversations([]);
+          setSelectionMode(false);
+        } catch (error) {
+          console.error("Error al eliminar conversaciones:", error);
+        } finally {
+          setModal((m) => ({ ...m, open: false }));
+        }
+      },
+    });
+  };
+
+  // Memoización de las conversaciones filtradas
+  const conversationsForUser = useMemo(() => {
+    if (!myEmail) {
+      return [];
+    }
 
     const term = search.trim().toLowerCase();
     const list = conversations
       .filter((conv) => {
-        // Verificar que la conversación tenga la estructura correcta
         if (!conv || !Array.isArray(conv.participants)) {
-          console.warn("Conversación inválida:", conv);
           return false;
         }
-
-        const isParticipant = conv.participants.includes(myEmail);
-        console.log("Verificando participación:", {
-          conversationId: conv.id,
-          participants: conv.participants,
-          myEmail,
-          isParticipant,
-        });
-        return isParticipant;
+        return conv.participants.includes(myEmail);
       })
       .map((conv) => {
-        // Obtener el otro participante y sus datos
         const otherParticipant =
           conv.participants.find((p) => p !== myEmail) || myEmail;
         const otherUser = conv.participants_data?.find(
           (p) => p.email === otherParticipant,
         );
 
-        console.log("Procesando conversación:", {
-          id: conv.id,
-          otherParticipant,
-          otherUser,
-          messages: conv.messages?.length || 0,
-          participants_data: conv.participants_data,
-        });
-
-        // Notificación de no leídos
         const lastReadTime = conv.lastReadAt?.[user.id] || 0;
         const unread =
           Array.isArray(conv.messages) &&
@@ -168,7 +239,6 @@ function InboxPage() {
             return isFromOther && messageTime > lastReadTime;
           });
 
-        // Extraer el nombre y avatar del otro participante de los datos de la conversación
         const listing = conv.listingId ? byId(conv.listingId) : null;
 
         return {
@@ -180,6 +250,7 @@ function InboxPage() {
           unread,
         };
       });
+
     if (!term) return list;
     return list.filter(
       (conv) =>
@@ -188,581 +259,496 @@ function InboxPage() {
     );
   }, [byId, conversations, myEmail, search, user?.id]);
 
-  // Utilidad para adjuntos con validación
-  const readFileAsDataUrl = (file) =>
-    new Promise((resolve, reject) => {
-      // Validar tamaño del archivo (máximo 5MB)
-      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-      if (file.size > MAX_SIZE) {
-        reject(new Error("El archivo es demasiado grande. Máximo 5MB."));
-        return;
-      }
+  // Conversación activa
+  const activeConversation = useMemo(() => {
+    if (!activeId) return null;
+    return conversationsForUser.find((conv) => conv.id === activeId) || null;
+  }, [activeId, conversationsForUser]);
 
-      // Validar tipo de archivo
-      const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        reject(
-          new Error("Solo se permiten imágenes en formato JPG, PNG o WEBP."),
-        );
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = () =>
-        resolve({
-          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          src: reader.result,
-          name: file.name,
-          mime: file.type || "image/jpeg",
-        });
-      reader.onerror = (error) => {
-        reject(
-          new Error(
-            "No se pudo procesar la imagen. Por favor, intenta con otra.",
-          ),
-        );
-      };
-      reader.readAsDataURL(file);
-    });
-
-  const formatTimestamp = (iso) => {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return "";
-    const now = new Date();
-    const sameDay =
-      date.getDate() === now.getDate() &&
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear();
-    return sameDay
-      ? date.toLocaleTimeString(undefined, {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : date.toLocaleString(undefined, {
-          day: "2-digit",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-  };
-
-  // Handlers globales para la conversación activa
-  const activeConversation = conversations.find((c) => c.id === activeId);
-  const otherEmail = activeConversation?.participants.find(
-    (p) => p !== myEmail,
-  );
-  const listing = activeConversation?.listingId
-    ? byId(activeConversation.listingId)
-    : null;
-  const transaction = activeConversation?.transaction || {};
-  const transactionCompleted = !!transaction.completed;
-  const isListingOwner =
-    listing && (listing.owner === myEmail || listing.ownerEmail === myEmail);
-  const blockedByMe = activeConversation?.blockedBy?.includes(myEmail);
-  const composerDisabled =
-    blockedByMe || activeConversation?.blockedBy?.includes(otherEmail);
-  const pendingRating =
-    transactionCompleted && !transaction.ratedBy?.includes(myEmail);
-  const counterpartRated =
-    transactionCompleted && transaction.ratedBy?.includes(otherEmail);
-
-  // Adjuntos
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    setMessageError("");
-
-    try {
-      const uploads = await Promise.all(
-        files.map(async (file) => {
-          try {
-            return await readFileAsDataUrl(file);
-          } catch (error) {
-            throw new Error(
-              `Error con el archivo ${file.name}: ${error.message}`,
-            );
-          }
-        }),
-      );
-      setDraftAttachments((prev) => [...prev, ...uploads]);
-      e.target.value = "";
-    } catch (error) {
-      setMessageError(
-        error.message ||
-          "No se pudo subir la foto. Intenta más tarde de nuevo.",
-      );
-      e.target.value = "";
-    }
-  };
-  const removeAttachment = (id) => {
-    setDraftAttachments((prev) => prev.filter((a) => a.id !== id));
-  };
-
-  // Enviar mensaje
-  const handleSend = async (e) => {
+  // Manejador para enviar mensajes
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (composerDisabled || (!draft.trim() && draftAttachments.length === 0))
+    if ((!draft.trim() && draftAttachments.length === 0) || !activeConversation)
       return;
-    setMessageError("");
+
     try {
-      await sendMessage(
+      await sendMessageAction(
         activeConversation.id,
-        user.email,
+        myEmail,
         draft,
         draftAttachments,
       );
       setDraft("");
       setDraftAttachments([]);
-    } catch (err) {
-      console.error("Error al enviar mensaje:", err);
-      // Manejar errores específicos
-      if (err.message.includes("desbloquear")) {
-        setMessageError("No puedes enviar mensajes a este usuario porque está bloqueado. Debes desbloquearlo primero desde tu perfil.");
-      } else if (err.status === 403) {
-        setMessageError("Este usuario te ha bloqueado y no puedes enviarle mensajes.");
-      } else {
-        setMessageError("No se pudo enviar el mensaje. Intenta de nuevo más tarde.");
-      }
+    } catch (error) {
+      console.error("Error al enviar mensaje:", error);
+      alert("No se pudo enviar el mensaje. Intenta de nuevo.");
     }
   };
 
-  // Calificación
-  const handleRatingSubmit = async (rating, feedback) => {
-    setRatingPending(true);
-    await submitReputationAction(activeConversation.id, rating, feedback);
-    setRatingPending(false);
-    setRatingFeedback("¡Gracias por calificar!");
-  };
+  // Manejador para adjuntar archivos
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-  // Confirmaciones modales
-  const confirmDelete = () => {
-    setModal({
-      open: true,
-      action: "delete",
-      text: "¿Deseas eliminar esta conversación? Esta acción no se puede deshacer.",
-      onConfirm: () => {
-        deleteConversation(activeConversation.id);
-        setModal((m) => ({ ...m, open: false }));
-      },
-    });
-  };
-  const toggleBlock = () => {
-    const currentlyBlocked = blockedByMe;
-    setModal({
-      open: true,
-      action: currentlyBlocked ? "unblock" : "block",
-      text: currentlyBlocked
-        ? "¿Quieres desbloquear a este usuario? Podrán volver a enviarte mensajes."
-        : "¿Seguro que deseas bloquear a este usuario? No recibirás más mensajes suyos.",
-      onConfirm: () => {
-        if (currentlyBlocked) {
-          unblockParticipant(myEmail, otherEmail);
-        } else {
-          blockParticipant(myEmail, otherEmail);
-        }
-        setModal((m) => ({ ...m, open: false }));
-      },
-    });
-  };
-  const handleMarkSold = () => {
-    if (!activeConversation || !listing) {
-      console.error("No hay conversación activa o publicación");
-      return;
-    }
-
-    console.log("Intentando marcar como vendido:", {
-      conversationId: activeConversation.id,
-      listingId: listing.id,
-      isOwner: isListingOwner,
-    });
-
-    setModal({
-      open: true,
-      action: "sold",
-      text: "¿Confirmas que deseas marcar esta publicación como vendida?",
-      onConfirm: async () => {
-        setCompleteError("");
-        setCompletePending(true);
-        try {
-          console.log(
-            "Ejecutando completeConversation:",
-            activeConversation.id,
-          );
-          const result = await completeConversationAction(
-            activeConversation.id,
-          );
-          console.log("Resultado de completeConversation:", result);
-
-          if (result?.success) {
-            // Actualizar el estado local inmediatamente
-            const updatedConversation = result.conversation;
-            if (updatedConversation) {
-              setActiveId(updatedConversation.id);
-            }
-          } else {
-            setCompleteError(
-              result?.error || "No se pudo marcar la transacción.",
-            );
-          }
-        } catch (error) {
-          console.error("Error al marcar como vendido:", error);
-          setCompleteError("Ocurrió un error al procesar la transacción.");
-        } finally {
-          setCompletePending(false);
-          setModal((m) => ({ ...m, open: false }));
-        }
-      },
-    });
-  };
-
-  // Renderizado de la conversación activa
-  const renderThread = () => {
-    if (!activeConversation) {
-      return (
-        <div className="thread-placeholder">
-          Selecciona una conversación para ver los mensajes.
-        </div>
+    try {
+      const uploads = await Promise.all(
+        files.map(async (file) => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                id: `att_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                name: file.name,
+                src: reader.result,
+              });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }),
       );
+      setDraftAttachments((prev) => [...prev, ...uploads]);
+      e.target.value = "";
+    } catch (error) {
+      console.error("Error al cargar archivos:", error);
+      alert("No se pudo cargar el archivo. Intenta de nuevo.");
+      e.target.value = "";
     }
-
-    console.log("Renderizando conversación activa:", {
-      id: activeConversation.id,
-      mensajes: activeConversation.messages?.length || 0,
-      participantes: activeConversation.participants,
-      miEmail: myEmail,
-    });
-
-    return (
-      <div className="thread">
-        {/* Barra fija superior con acciones */}
-        <div className="thread-actions-bar">
-          {isMobile && (
-            <button
-              className="thread-back"
-              onClick={() => setActiveId(null)}
-              aria-label="Volver a la lista"
-            >
-              <svg
-                width="24"
-                height="24"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-          )}
-          {listing && (
-            <div className="thread-listing">
-              <div>
-                <strong>{listing.name}</strong>
-              </div>
-              <a className="thread-listing-link" href={`#/item/${listing.id}`}>
-                Ver publicación
-              </a>
-            </div>
-          )}
-          <div className="thread-transaction">
-            {!transactionCompleted && isListingOwner && (
-              <button
-                type="button"
-                className="btn primary"
-                onClick={handleMarkSold}
-                disabled={completePending}
-              >
-                {completePending ? "Marcando..." : "Marcar como concretado"}
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn outline sm"
-              onClick={toggleBlock}
-            >
-              {blockedByMe ? "Desbloquear" : "Bloquear"}
-            </button>
-            <button
-              type="button"
-              className="btn outline sm danger"
-              onClick={confirmDelete}
-            >
-              Borrar
-            </button>
-            {completeError && (
-              <div className="field-error" role="alert">
-                {completeError}
-              </div>
-            )}
-            {transactionCompleted && (
-              <div className="transaction-status">
-                <strong>Operación registrada</strong>
-                <span>
-                  {`Participantes: comprador ${transaction.buyerId === user?.id ? "(tú)" : ""} · vendedor ${transaction.sellerId === user?.id ? "(tú)" : ""}`}
-                </span>
-              </div>
-            )}
-            {transactionCompleted && pendingRating && (
-              <div className="transaction-rating">
-                <h3>Califica tu experiencia</h3>
-                <RatingForm
-                  onSubmit={handleRatingSubmit}
-                  pending={ratingPending}
-                />
-                {ratingFeedback && (
-                  <div className="transaction-feedback">{ratingFeedback}</div>
-                )}
-              </div>
-            )}
-            {transactionCompleted && !pendingRating && (
-              <div className="transaction-rating-summary">
-                {ratingFeedback ||
-                  (counterpartRated
-                    ? "Ambas calificaciones registradas."
-                    : "Gracias por calificar. Esperando la calificación de la otra parte.")}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mensajes scrollables debajo de la barra fija */}
-        <div className="thread-messages" aria-live="polite">
-          {activeConversation.messages.length === 0 ? (
-            <div className="thread-empty">No hay mensajes todavía.</div>
-          ) : (
-            activeConversation.messages.map((msg) => {
-              const mine = msg.sender === myEmail;
-              const hasImages =
-                Array.isArray(msg.attachments) && msg.attachments.length > 0;
-              return (
-                <div
-                  key={msg.id}
-                  className={`thread-message ${mine ? "mine" : ""}`}
-                >
-                  {hasImages && (
-                    <div className="thread-message-images">
-                      {msg.attachments.map((att) => (
-                        <a
-                          key={att.id}
-                          href={att.src}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="thread-message-image"
-                        >
-                          <img src={att.src} alt={att.name || "Adjunto"} />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                  {msg.body && (
-                    <div className="thread-message-body">{msg.body}</div>
-                  )}
-                  <span className="thread-message-meta">
-                    {mine ? "Tú" : otherEmail.split("@")[0]} ·{" "}
-                    {formatTimestamp(msg.createdAt)}
-                  </span>
-                </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input fijo abajo */}
-        <div className="thread-composer-fixed">
-          <form className="thread-composer" onSubmit={handleSend}>
-            {composerDisabled && (
-              <div className="thread-alert">
-                {blockedByMe
-                  ? "Has bloqueado a este usuario. Desbloquéalo para continuar la conversación."
-                  : "Este usuario bloqueó la conversación. No puedes responder."}
-              </div>
-            )}
-
-            {draftAttachments.length > 0 && (
-              <div className="composer-attachments">
-                {draftAttachments.map((att) => (
-                  <div key={att.id} className="composer-attachment">
-                    <img src={att.src} alt={att.name} />
-                    <button
-                      type="button"
-                      className="attachment-remove"
-                      onClick={() => removeAttachment(att.id)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="composer-toolbar custom-toolbar">
-              <label
-                className="attach-button custom-attach"
-                style={{ color: "#1089c6" }}
-              >
-                <svg
-                  width="22"
-                  height="22"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    d="M12 5v14m-7-7h14"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileUpload}
-                  disabled={composerDisabled}
-                />
-              </label>
-              <div style={{ flex: 1 }} />
-              <button
-                type="submit"
-                className="btn primary custom-send"
-                style={{ background: "#ffff", color: "#1089c6" }}
-                disabled={
-                  composerDisabled ||
-                  (!draft.trim() && draftAttachments.length === 0)
-                }
-              >
-                <svg
-                  width="22"
-                  height="22"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
-              </button>
-            </div>
-            <textarea
-              className="input"
-              placeholder={
-                composerDisabled ? "" : "Escribe un mensaje o adjunta imágenes"
-              }
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              rows={composerDisabled ? 2 : 3}
-              disabled={composerDisabled}
-            />
-            {messageError && (
-              <div className="field-error" role="alert">
-                {messageError}
-              </div>
-            )}
-          </form>
-        </div>
-
-        {/* Modal de confirmación */}
-        <ConfirmModal
-          open={modal.open}
-          text={modal.text}
-          onClose={() => setModal((m) => ({ ...m, open: false }))}
-          onConfirm={modal.onConfirm}
-        />
-      </div>
-    );
   };
 
+  const removeAttachment = (id) => {
+    setDraftAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  // Renderizado base
   if (!user) {
     return <main className="container page">No autorizado.</main>;
   }
 
-  // return principal al final
+  // Renderizado principal
   return (
     <main
-      className={`container page inbox-page${activeId ? " has-active-chat no-app-header" : ""}`}
+      className={`container page inbox-page${activeId ? " has-active-chat" : ""}`}
     >
-      <div className="inbox-shell">
-        <section
-          className={`conversation-list ${isMobile && activeId ? "hidden" : ""}`}
-        >
-          <div className="list-header">
-            <h2>Conversaciones</h2>
-            <input
-              className="input"
-              placeholder="Buscar por usuario o publicación"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
-          <div className="list-scroller" role="list">
-            {conversationsForUser.length === 0 ? (
-              <div className="list-empty">
-                No hay conversaciones todavía. Escribe a un vendedor desde un
-                anuncio.
-              </div>
-            ) : (
-              conversationsForUser.map((conv) => {
-                const displayName = conv.otherName;
-                return (
-                  <div
-                    key={conv.id}
-                    className={`inbox-card${activeId === conv.id ? " active" : ""}${conv.unread ? " message-new" : ""}`}
-                    onClick={() => {
-                      setActiveId(conv.id);
-                      markConversationAsRead(conv.id);
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="seller-photo-wrapper">
-                      <img
-                        src={
-                          conv.listing?.images?.[0] || "/images/placeholder.jpg"
-                        }
-                        alt={
-                          conv.listing
-                            ? `Imagen de ${conv.listing.name}`
-                            : "Imagen del artículo"
-                        }
-                        className="seller-photo"
-                        onError={(event) => {
-                          console.log(
-                            "Error cargando imagen:",
-                            event.currentTarget.src,
-                          );
-                          event.currentTarget.onerror = null;
-                          event.currentTarget.src = "/images/placeholder.jpg";
-                        }}
-                        loading="lazy"
-                      />
-                    </div>
+      <div
+        className={`inbox-page-header ${isMobile && activeId ? "hidden" : ""}`}
+      >
+        <h1 className="inbox-page-title">Mensajes y propuestas</h1>
+        <div className="inbox-nav-wrapper">
+          <InboxNav activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+      </div>
 
-                    <div className="inbox-card-body">
-                      <div className="inbox-card-header">
-                        <span className="inbox-card-name">{displayName}</span>
-                      </div>
-                      {conv.listing && (
-                        <div className="inbox-card-preview">
-                          {conv.listing.name}
+      {activeTab === "messages" ? (
+        <div className="inbox-shell">
+          <section
+            className={`conversation-list ${isMobile && activeId ? "hidden" : ""}`}
+          >
+            <div className="list-header">
+              <div className="list-header-top">
+                <h2>Conversaciones</h2>
+                <button
+                  className="btn-selection-mode"
+                  onClick={toggleSelectionMode}
+                  title={
+                    selectionMode ? "Cancelar selección" : "Seleccionar chats"
+                  }
+                >
+                  {selectionMode ? <MdClose /> : "Seleccionar"}
+                </button>
+              </div>
+              {selectionMode && selectedConversations.length > 0 && (
+                <div className="list-header-delete-bar">
+                  <button
+                    className="btn-delete-selected"
+                    onClick={handleDeleteSelectedConversations}
+                    title={`Eliminar ${selectedConversations.length} chat(s)`}
+                  >
+                    <MdDelete /> Eliminar ({selectedConversations.length})
+                  </button>
+                </div>
+              )}
+              {!selectionMode && (
+                <>
+                  <input
+                    className="input"
+                    placeholder="Buscar por usuario o publicación"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                  <div className="inbox-legend">
+                    <span className="inbox-legend-item">
+                      <span className="inbox-legend-indicator my-listing"></span>
+                      <span className="inbox-legend-text">Mi publicación</span>
+                    </span>
+                    <span className="inbox-legend-item">
+                      <span className="inbox-legend-indicator other-listing"></span>
+                      <span className="inbox-legend-text">
+                        Otra publicación
+                      </span>
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="list-scroller" role="list">
+              {conversationsForUser.length === 0 ? (
+                <div className="list-empty">
+                  No hay conversaciones todavía. Escribe a un vendedor desde un
+                  anuncio.
+                </div>
+              ) : (
+                conversationsForUser.map((conv) => {
+                  const isMyListing = conv.listing?.ownerId === user?.id;
+                  return (
+                    <div
+                      key={conv.id}
+                      className={`inbox-card${activeId === conv.id ? " active" : ""}${conv.unread ? " message-new" : ""}${selectionMode ? " selection-mode" : ""}${selectedConversations.includes(conv.id) ? " selected" : ""}${isMyListing ? " my-listing" : " other-listing"}`}
+                      onClick={() => {
+                        if (selectionMode) {
+                          toggleConversationSelection(conv.id);
+                        } else {
+                          setActiveId(conv.id);
+                          markConversationAsRead(conv.id);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      {selectionMode && (
+                        <div className="inbox-card-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedConversations.includes(conv.id)}
+                            onChange={() =>
+                              toggleConversationSelection(conv.id)
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </div>
                       )}
+                      <div className="seller-photo-wrapper">
+                        <img
+                          src={
+                            conv.listing?.images?.[0] ||
+                            "/images/placeholder.jpg"
+                          }
+                          alt={
+                            conv.listing
+                              ? `Imagen de ${conv.listing.name}`
+                              : "Imagen del artículo"
+                          }
+                          className="seller-photo"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/images/placeholder.jpg";
+                          }}
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="inbox-card-body">
+                        <div className="inbox-card-header">
+                          <span className="inbox-card-name">
+                            {conv.otherName}
+                          </span>
+                        </div>
+                        {conv.listing && (
+                          <div className="inbox-card-listing">
+                            {conv.listing.name}
+                          </div>
+                        )}
+                        {conv.messages && conv.messages.length > 0 && (
+                          <div className="inbox-card-preview">
+                            {conv.messages[conv.messages.length - 1].body ||
+                              (conv.messages[conv.messages.length - 1]
+                                .attachments?.length > 0
+                                ? "📎 Imagen"
+                                : "...")}
+                          </div>
+                        )}
+                      </div>
+                      {!selectionMode && (
+                        <button
+                          className="btn-delete-conversation"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSingleConversation(conv.id);
+                          }}
+                          title="Eliminar conversación"
+                        >
+                          <MdDelete />
+                        </button>
+                      )}
+                      {conv.unread && <span className="inbox-card-unread" />}
                     </div>
-                    {conv.unread && <span className="inbox-card-unread" />}
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          <section
+            className={`conversation-thread ${isMobile && !activeId ? "hidden" : ""}`}
+          >
+            {activeConversation ? (
+              <div className="thread">
+                {/* Header con info del usuario, publicación y toolbar de acciones */}
+                <div className="thread-header-enhanced">
+                  {isMobile && (
+                    <button
+                      className="thread-back"
+                      onClick={() => setActiveId(null)}
+                      aria-label="Volver a la lista"
+                    >
+                      ←
+                    </button>
+                  )}
+
+                  <div className="thread-header-info">
+                    <div className="thread-user-info">
+                      <div className="thread-avatar-container">
+                        {activeConversation.otherUser?.avatar ? (
+                          <img
+                            src={activeConversation.otherUser.avatar}
+                            alt={activeConversation.otherName}
+                            className="thread-avatar-large-img"
+                            onError={(e) => {
+                              // Si falla la carga, mostrar el avatar con inicial
+                              e.target.style.display = "none";
+                              const fallback = document.createElement("div");
+                              fallback.className = "thread-avatar-large";
+                              fallback.textContent =
+                                activeConversation.otherName
+                                  ?.charAt(0)
+                                  .toUpperCase() || "?";
+                              e.target.parentNode.appendChild(fallback);
+                            }}
+                          />
+                        ) : (
+                          <div className="thread-avatar-large">
+                            {activeConversation.otherName
+                              ?.charAt(0)
+                              .toUpperCase() || "?"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="thread-user-details">
+                        <div className="thread-name-large">
+                          {activeConversation.otherName}
+                        </div>
+                        {activeConversation.listing && (
+                          <div className="thread-listing-info">
+                            <div className="thread-listing-name">
+                              <MdInventory2 /> {activeConversation.listing.name}
+                            </div>
+                            <button
+                              className="btn-view-listing"
+                              onClick={() =>
+                                navigate(
+                                  `/item/${activeConversation.listing.id}`,
+                                )
+                              }
+                              title="Ver publicación"
+                            >
+                              <MdOpenInNew /> Ver
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Toolbar de acciones secundarias en el header */}
+                    <div className="thread-actions-header">
+                      <button
+                        className="btn-action-header"
+                        onClick={() => {
+                          if (window.confirm("¿Bloquear a este usuario?")) {
+                            blockParticipant(
+                              activeConversation.id,
+                              activeConversation.other,
+                            );
+                          }
+                        }}
+                        title="Bloquear usuario"
+                      >
+                        <MdBlock />
+                      </button>
+                      <button
+                        className="btn-action-header"
+                        onClick={() =>
+                          alert("Función de reportar próximamente")
+                        }
+                        title="Reportar usuario"
+                      >
+                        <MdFlag />
+                      </button>
+                      <button
+                        className="btn-action-header danger"
+                        onClick={() => {
+                          if (window.confirm("¿Eliminar esta conversación?")) {
+                            deleteConversation(activeConversation.id);
+                            setActiveId(null);
+                          }
+                        }}
+                        title="Eliminar conversación"
+                      >
+                        <MdDelete />
+                      </button>
+                    </div>
                   </div>
-                );
-              })
+
+                  {/* Botón destacado de marcar como vendido - SOLO PARA EL DUEÑO DE LA PUBLICACIÓN */}
+                  {activeConversation.listing?.ownerId === user?.id && (
+                    <button
+                      className="btn-mark-sold"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "¿Marcar como vendido y cerrar conversación?",
+                          )
+                        ) {
+                          completeConversation(activeConversation.id);
+                        }
+                      }}
+                      title="Marcar como vendido"
+                    >
+                      <MdCheckCircle /> Marcar como vendido
+                    </button>
+                  )}
+                </div>
+
+                {/* Mensajes */}
+                <div className="thread-messages">
+                  {activeConversation.messages?.length === 0 ? (
+                    <div className="thread-empty">No hay mensajes todavía.</div>
+                  ) : (
+                    activeConversation.messages?.map((msg) => {
+                      const mine = msg.sender === myEmail;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`thread-message ${mine ? "mine" : ""}`}
+                        >
+                          {msg.attachments?.length > 0 && (
+                            <div className="thread-message-images">
+                              {msg.attachments.map((att, idx) => (
+                                <div key={idx} className="thread-message-image">
+                                  <img
+                                    src={att.src}
+                                    alt={att.name || "Imagen"}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {msg.body && (
+                            <div className="thread-message-body">
+                              {msg.body}
+                            </div>
+                          )}
+                          <span className="thread-message-meta">
+                            {mine ? "Tú" : activeConversation.otherName}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Composer fijo en la parte inferior */}
+                <div className="thread-composer-fixed">
+                  {/* Preview de adjuntos */}
+                  {draftAttachments.length > 0 && (
+                    <div className="attachment-preview">
+                      {draftAttachments.map((att) => (
+                        <div key={att.id} className="attachment-item">
+                          <img src={att.src} alt={att.name} />
+                          <button
+                            type="button"
+                            className="remove-attachment"
+                            onClick={() => removeAttachment(att.id)}
+                            aria-label="Eliminar adjunto"
+                          >
+                            <MdClose />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Barra de botones pequeña arriba del input */}
+                  <div className="composer-actions-bar">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileUpload}
+                      style={{ display: "none" }}
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="btn-composer-action"
+                      title="Adjuntar imagen"
+                    >
+                      <MdAttachFile />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSendMessage}
+                      className="btn-composer-action primary"
+                      disabled={!draft.trim() && draftAttachments.length === 0}
+                      title="Enviar mensaje"
+                    >
+                      <MdSend />
+                    </button>
+                  </div>
+
+                  {/* Input de texto ancho completo */}
+                  <form
+                    className="thread-composer"
+                    onSubmit={handleSendMessage}
+                  >
+                    <textarea
+                      className="input-full-width"
+                      placeholder="Escribe un mensaje..."
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      rows={3}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage(e);
+                        }
+                      }}
+                    />
+                  </form>
+                </div>
+              </div>
+            ) : (
+              <div className="thread-placeholder">
+                Selecciona una conversación para ver los mensajes.
+              </div>
             )}
-          </div>
-        </section>
-        <section
-          className={`conversation-thread ${isMobile && !activeId ? "hidden" : ""}`}
-        >
-          {renderThread()}
-        </section>
-      </div>
+          </section>
+        </div>
+      ) : (
+        <div className="swap-proposals-container">
+          <SwapProposals
+            proposals={swapProposals}
+            currentUserId={user?.id}
+            onDelete={handleDeleteSwap}
+          />
+        </div>
+      )}
+
+      <ConfirmModal
+        open={modal.open}
+        text={modal.text}
+        onClose={() => setModal((m) => ({ ...m, open: false }))}
+        onConfirm={modal.onConfirm}
+      />
     </main>
   );
 }

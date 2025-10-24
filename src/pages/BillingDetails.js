@@ -1,9 +1,8 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi";
-import LoadingOverlay from "../components/LoadingOverlay/LoadingOverlay";
 import "../styles/CategoryPage.css";
 import "./ProfilePage.css";
 
@@ -12,17 +11,10 @@ function BillingDetails() {
   const data = useData();
   const navigate = useNavigate();
   const user = auth?.user;
-  const loading = data?.loading;
-  const allItems = data?.allItems || [];
-
-  useEffect(() => {
-    if (!auth?.token) {
-      navigate('/login', { state: { from: '/profile/billing-details' } });
-    }
-  }, [auth?.token, navigate]);
   // Solo mostrar publicaciones vendidas
   const mySoldItems = useMemo(() => {
     if (!user) return [];
+    const allItems = data?.allItems || [];
     const normalizedEmail = String(user.email).toLowerCase();
     return allItems.filter(
       (item) =>
@@ -33,7 +25,7 @@ function BillingDetails() {
           String(item.status).toLowerCase(),
         ),
     );
-  }, [allItems, user]);
+  }, [user, data?.allItems]);
 
   const billingSummary = useMemo(() => {
     const rates = {
@@ -65,20 +57,6 @@ function BillingDetails() {
     });
     return { summary, total: grandTotal, rates, labels };
   }, [mySoldItems]);
-
-  if (loading) {
-    return <LoadingOverlay message="Cargando datos de facturación..." />;
-  }
-
-  if (!data?.allItems) {
-    return (
-      <div className="profile-billing-details category-header-bar">
-        <p style={{ textAlign: "center", padding: "20px" }}>
-          Error al cargar los datos de facturación. Por favor, intenta de nuevo más tarde.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div

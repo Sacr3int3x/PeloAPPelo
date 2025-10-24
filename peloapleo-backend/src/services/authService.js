@@ -31,7 +31,6 @@ export async function createUser({
   location,
   username,
   phone,
-  role,
 }) {
   const normalizedEmail = normalizeIdentifier(email);
   const normalizedUsername = normalizeIdentifier(username);
@@ -56,7 +55,7 @@ export async function createUser({
       error.statusCode = 409;
       throw error;
     }
-    const assignedRole = role || (ADMIN_EMAILS.has(normalizedEmail) ? "admin" : "user");
+    const inferredRole = ADMIN_EMAILS.has(normalizedEmail) ? "admin" : "user";
     const record = {
       id: prefixedId("usr"),
       email: normalizedEmail,
@@ -68,7 +67,7 @@ export async function createUser({
       since: now,
       createdAt: now,
       updatedAt: now,
-      role: assignedRole,
+      role: inferredRole,
     };
     db.users.push(record);
     return sanitizeUser(record);

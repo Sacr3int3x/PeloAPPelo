@@ -12,7 +12,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "lowdb": "^5.1.0",
     "multer": "^2.0.2",
+    "nanoid": "^3.3.11",
     "ws": "^8.18.0"
   }
 }

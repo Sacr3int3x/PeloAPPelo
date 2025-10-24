@@ -2,25 +2,31 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi";
 import { MdAddAPhoto } from "react-icons/md";
+import { FiLogOut } from "react-icons/fi";
 import "../styles/CategoryPage.css";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { fetchMyReputations } from "../services/transactions";
-import { uploadProfilePhoto, removeProfilePhoto } from "../services/profile";
+import { uploadProfilePhoto } from "../services/profile";
 import "./ProfilePage.css";
 
 function ProfilePage() {
   const auth = useAuth();
+  const navigate = useNavigate();
   const data = useData();
   const resolveByOwner = data?.byOwner;
   const token = auth?.token || null;
   const user = auth?.user || null;
-  // logout no se usa
-  const navigate = useNavigate();
 
   const [reputations, setReputations] = useState([]);
   const [uploadPending, setUploadPending] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogout = () => {
+    auth.logout();
+    navigate("/");
+  };
 
   const handleProfilePhotoChange = async (e) => {
     const file = e.target.files?.[0];
@@ -92,15 +98,6 @@ function ProfilePage() {
 
   // billingSummary no se usa
 
-  const handleLogout = async () => {
-    try {
-      await auth.logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  };
-
   if (!user) {
     return <main className="container page">No autorizado.</main>;
   }
@@ -162,6 +159,12 @@ function ProfilePage() {
             <span className="profile-stat-value">{activeListings}</span>
             <span className="profile-stat-label">Publicaciones activas</span>
           </div>
+          <div className="profile-stat">
+            <span className="profile-stat-value">
+              {new Date().getFullYear() - memberYear}
+            </span>
+            <span className="profile-stat-label">Años en la plataforma</span>
+          </div>
         </div>
       </section>
       <section className="panel profile-menu">
@@ -189,7 +192,7 @@ function ProfilePage() {
             </div>
             <span aria-hidden>›</span>
           </Link>
-          <Link to="/profile/billing-details" className="profile-link">
+          <Link to="/billing" className="profile-link">
             <div className="profile-link-text">
               <span>Facturación detallada</span>
               <small>
@@ -198,7 +201,7 @@ function ProfilePage() {
             </div>
             <span aria-hidden>›</span>
           </Link>
-          <Link to="/profile/reputation-details" className="profile-link">
+          <Link to="/reputation" className="profile-link">
             <div className="profile-link-text">
               <span>Reputaciones detalladas</span>
               <small>Ver todas tus valoraciones y comentarios recibidos.</small>
@@ -214,7 +217,7 @@ function ProfilePage() {
             </div>
             <span aria-hidden>›</span>
           </Link>
-          <Link to="/" className="profile-link">
+          <Link to="/help" className="profile-link">
             <div className="profile-link-text">
               <span>Centro de ayuda</span>
               <small>Consejos y soporte para tus intercambios.</small>
@@ -232,19 +235,53 @@ function ProfilePage() {
               <span aria-hidden>›</span>
             </Link>
           )}
-          <button 
-            onClick={handleLogout} 
-            className="profile-link"
-            style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', color: '#dc2626' }}
-          >
-            <div className="profile-link-text">
-              <span>Cerrar sesión</span>
-              <small>Terminar la sesión actual y volver al inicio</small>
-            </div>
-            <span aria-hidden>›</span>
-          </button>
         </div>
       </section>
+
+      <section className="panel profile-logout-section">
+        <button
+          className="profile-logout-btn"
+          onClick={() => setShowLogoutModal(true)}
+        >
+          <FiLogOut size={20} />
+          <span>Cerrar sesión</span>
+        </button>
+      </section>
+
+      {/* Modal de confirmación de cierre de sesión */}
+      {showLogoutModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3
+              style={{
+                margin: "0 0 8px 0",
+                fontSize: "1.3em",
+                color: "#1e293b",
+              }}
+            >
+              ¿Cerrar sesión?
+            </h3>
+            <p className="modal-text">
+              Se cerrará tu sesión actual. Tendrás que volver a iniciar sesión
+              para acceder a tu cuenta.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn outline"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancelar
+              </button>
+              <button className="btn primary" onClick={handleLogout}>
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

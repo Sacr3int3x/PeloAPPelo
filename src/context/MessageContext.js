@@ -144,76 +144,20 @@ export function MessageProvider({ children }) {
     }
   }, [token, user]);
 
-  // Función para filtrar conversaciones bloqueadas
-  const filterBlockedConversations = useCallback((convs) => {
-    if (!user?.email) return convs;
-
-    const currentUserEmail = user.email.toLowerCase();
-    const { blockedUsers } = window.__BLOCK_CONTEXT__ || {};
-    
-    return convs.filter(conv => {
-      // Obtener el otro participante de la conversación
-      const otherParticipant = conv.participants?.find(
-        p => p.toLowerCase() !== currentUserEmail
-      )?.toLowerCase();
-
-      if (!otherParticipant) return false;
-
-      // Verificar bloqueos bidireccionales
-      const blockInfo = blockedUsers?.get(otherParticipant);
-      const amIBlockedByOther = blockedUsers?.get(currentUserEmail)?.direction === 'incoming';
-      
-      if (blockInfo || amIBlockedByOther) {
-        console.log('Conversación filtrada por bloqueo:', {
-          conversationId: conv.id,
-          participants: conv.participants,
-          currentUser: currentUserEmail,
-          otherParticipant,
-          blockDirection: blockInfo?.direction,
-          amIBlocked: amIBlockedByOther
-        });
-        return false;
-      }
-
-      return true;
-    });
-  }, [user]);
-
   useEffect(() => {
     console.log("Iniciando carga de conversaciones...");
     if (!token) {
       console.log("No hay token, omitiendo carga");
       return;
     }
-
     fetchConversations()
       .then(() => {
         console.log("Conversaciones cargadas");
-        setConversations(prev => filterBlockedConversations(prev));
       })
       .catch((error) => {
         console.error("Error cargando conversaciones:", error);
       });
-  }, [fetchConversations, token, filterBlockedConversations]);
-
-  // Efecto para re-filtrar conversaciones cuando cambia el estado de bloqueo
-  useEffect(() => {
-    const blockContext = window.__BLOCK_CONTEXT__;
-    if (!blockContext || !user?.email) return;
-
-    const handleBlockUpdate = () => {
-      setConversations(prev => filterBlockedConversations(prev));
-    };
-
-    // Suscribirse a eventos de bloqueo
-    const offBlocked = realtime.on('user.blocked', handleBlockUpdate);
-    const offUnblocked = realtime.on('user.unblocked', handleBlockUpdate);
-
-    return () => {
-      offBlocked();
-      offUnblocked();
-    };
-  }, [user, filterBlockedConversations]);
+  }, [fetchConversations, token]);
 
   useEffect(() => {
     if (!token || !user) return () => {};
@@ -245,30 +189,6 @@ export function MessageProvider({ children }) {
           conversation.id,
         );
         return;
-      }
-
-      // Verificar bloqueos antes de procesar la actualización
-      const blockContext = window.__BLOCK_CONTEXT__;
-      if (blockContext && user?.email) {
-        const currentUserEmail = user.email.toLowerCase();
-        const otherParticipant = conversation.participants?.find(
-          p => p.toLowerCase() !== currentUserEmail
-        )?.toLowerCase();
-
-        if (otherParticipant) {
-          const isBlocked = 
-            blockContext.blockedUsers?.has(otherParticipant) ||
-            blockContext.blockedUsers?.get(otherParticipant)?.includes(currentUserEmail);
-
-          if (isBlocked) {
-            console.log('Ignorando actualización de conversación bloqueada:', {
-              conversationId: conversation.id,
-              currentUser: currentUserEmail,
-              otherParticipant
-            });
-            return;
-          }
-        }
       }
 
       console.log("Realtime: Actualizando conversación", {
@@ -436,9 +356,10 @@ export function MessageProvider({ children }) {
     async ({ to, listingId, initialMessage, initialAttachments }) => {
       if (!token || !user) return null;
 
-      // Usar el contexto de bloqueo para verificar si hay bloqueo mutuo
-      const { hasMutualBlock } = window.__BLOCK_CONTEXT__ || {};
-      if (hasMutualBlock && hasMutualBlock(user.email, to)) {
+      // Verificar si hay un bloqueo mutuo antes de intentar crear la conversación
+      const isBlocked =
+        blocked[user.email]?.includes(to) || blocked[to]?.includes(user.email);
+      if (isBlocked) {
         throw new Error(
           "No es posible iniciar la conversación porque existe un bloqueo entre los usuarios.",
         );
@@ -449,6 +370,7 @@ export function MessageProvider({ children }) {
           from: user.email,
           to,
           listingId,
+          tieneBloqueo: isBlocked,
         });
 
         // Verificar si ya existe una conversación para este listingId
@@ -738,57 +660,31 @@ export function MessageProvider({ children }) {
     async (owner, target) => {
       if (!token || !user) return;
       try {
-        // Primero realizar el bloqueo
-        await apiRequest("/me/block", {
+        await apiRequest("/block", {
           method: "POST",
           token,
-          data: { email: target },
+          data: { target },
         });
-
-        // Actualizar el estado local de bloqueos
         setBlocked((prev) => {
           const list = new Set(prev[owner] || []);
           list.add(target);
           return { ...prev, [owner]: Array.from(list) };
         });
-
-        // Eliminar todas las conversaciones con el usuario bloqueado
-        setConversations((prev) => {
-          return prev.filter(conv => {
-            const participants = conv.participants || [];
-            const hasBlockedUser = participants.some(p => 
-              p.toLowerCase() === target.toLowerCase()
-            );
-            
-            if (hasBlockedUser) {
-              console.log('Eliminando conversación con usuario bloqueado:', {
-                conversationId: conv.id,
-                participants: conv.participants
-              });
-              return false;
-            }
-            return true;
-          });
-        });
-
-        // Actualizar la interfaz de tiempo real
-        realtime.emit('user.blocked', { owner, target });
-
       } catch (error) {
         console.error("No se pudo bloquear al usuario", error);
       }
     },
-    [token, user, setConversations],
+    [token, user],
   );
 
   const unblockParticipant = useCallback(
     async (owner, target) => {
       if (!token || !user) return;
       try {
-        await apiRequest("/me/unblock", {
+        await apiRequest("/unblock", {
           method: "POST",
           token,
-          data: { email: target },
+          data: { target },
         });
         setBlocked((prev) => {
           const list = new Set(prev[owner] || []);

@@ -6,7 +6,6 @@ import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../context/MessageContext";
 import Rating from "../components/Rating/Rating";
 import { clamp, fmt } from "../utils/format";
-import BlockAlert from "../components/BlockAlert/BlockAlert";
 import "./ItemPage.css";
 
 function ItemPage() {
@@ -14,10 +13,9 @@ function ItemPage() {
   const nav = useNavigate();
   const loc = useLocation();
   const { byId, byOwner, isFav, toggleFav } = useData();
-  const { startConversation, blocked } = useMessages();
+  const { startConversation } = useMessages();
   const { id } = useParams();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [blockAlert, setBlockAlert] = useState(null);
 
   const item = byId(id);
   if (!item) return <main className="container page">No encontrado.</main>;
@@ -25,7 +23,7 @@ function ItemPage() {
   const images = (
     item.images?.length ? item.images : ["/images/placeholder.jpg"]
   ).slice(0, 6);
-  const sellerEmail = item.ownerEmail || "";
+  const sellerEmail = item.ownerEmail || null;
   const ownerListings = sellerEmail ? byOwner(sellerEmail) : [];
 
   // Manejo seguro de la reputación del vendedor
@@ -65,7 +63,6 @@ function ItemPage() {
 
   return (
     <main className="container page item-page">
-      {blockAlert && <BlockAlert message={blockAlert} />}
       <div className="item-header-bar">
         <button
           type="button"
@@ -286,11 +283,20 @@ function ItemPage() {
               if (isOwner) return;
 
               try {
-                console.log("Iniciando conversación con vendedor:", {
-                  seller: sellerEmail,
-                  listing: item.id,
-                  currentUser: user.email,
-                });
+                // Validar que tenemos el email del vendedor
+                if (!sellerEmail) {
+                  throw new Error(
+                    "No se pudo obtener la información del vendedor. Intenta recargar la página.",
+                  );
+                }
+
+                // Evitar que el usuario se envíe mensajes a sí mismo
+                if (
+                  user?.email &&
+                  sellerEmail.toLowerCase() === user.email.toLowerCase()
+                ) {
+                  throw new Error("No puedes enviarte mensajes a ti mismo.");
+                }
 
                 // Primero crear la conversación
                 const conversationId = await startConversation({
@@ -303,44 +309,27 @@ function ItemPage() {
                   throw new Error("No se pudo crear la conversación");
                 }
 
-                console.log("Conversación creada:", conversationId);
-
                 // Redirigir al usuario al inbox con la conversación seleccionada
-                const inboxUrl = `/inbox?conversation=${conversationId}`;
-                console.log("Navegando a:", inboxUrl);
-                nav(inboxUrl, { replace: true });
+                nav(`/inbox?conversation=${conversationId}`, { replace: true });
               } catch (error) {
                 console.error("Error al iniciar conversación:", error);
 
-                // Determinar tipo de error y mensaje apropiado
-                let errorMessage;
-                let shouldRedirect = false;
+                // Mostrar mensaje específico según el error
+                let errorMessage =
+                  "Hubo un problema al iniciar la conversación.";
 
-                if (error.message.toLowerCase().includes("bloqueo") || error.status === 403) {
-                  // Caso específico de bloqueo
-                  if (user?.email && blocked && (
-                    blocked[user.email]?.includes(sellerEmail) || 
-                    blocked[sellerEmail]?.includes(user.email)
-                  )) {
-                    // El usuario actual está bloqueado o ha bloqueado al vendedor
-                    errorMessage = blocked[user.email]?.includes(sellerEmail)
-                      ? "Has bloqueado a este usuario. Debes desbloquearlo para poder enviarle mensajes."
-                      : "Este usuario te ha bloqueado. No puedes enviarle mensajes.";
-                  } else {
-                    // Caso general de error 403
-                    errorMessage = "No tienes permiso para iniciar esta conversación.";
-                  }
-                  shouldRedirect = true;
-                } else {
-                  // Otros errores
-                  errorMessage = "Hubo un problema al iniciar la conversación. Por favor, inténtalo de nuevo más tarde.";
+                if (error.message.includes("bloqueo")) {
+                  errorMessage =
+                    "No es posible iniciar la conversación porque existe un bloqueo entre los usuarios.";
+                } else if (error.status === 403) {
+                  errorMessage =
+                    "No tienes permiso para iniciar esta conversación.";
                 }
 
-                // Mostrar el mensaje de error usando nuestro componente de alerta
-                setBlockAlert(errorMessage);
+                alert(errorMessage);
 
-                // Redirigir si es necesario
-                if (shouldRedirect) {
+                // Si hay un bloqueo, podríamos redirigir al usuario de vuelta
+                if (error.status === 403) {
                   nav(-1);
                 }
               }
@@ -357,8 +346,10 @@ function ItemPage() {
             className="item-action-button item-action-button--primary"
             onClick={() =>
               user
-                ? nav(`/swap/${item.id}`)
-                : nav(`/login?next=${encodeURIComponent(`/swap/${item.id}`)}`)
+                ? nav(`/propose-swap/${item.id}`)
+                : nav(
+                    `/login?next=${encodeURIComponent(`/propose-swap/${item.id}`)}`,
+                  )
             }
           >
             <span className="item-action-title">Proponer intercambio</span>

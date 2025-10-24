@@ -458,6 +458,13 @@
       "userId": "usr_4dcdd45c919a44c7",
       "createdAt": "2025-10-23T23:36:03.864Z",
       "expiresAt": "2025-10-30T23:36:03.864Z"
+    },
+    {
+      "id": "sess_5c46a2de10cd429e",
+      "token": "Vk5_jqu2hXhsEiiQBYQ7DsN92fHEILJAlG1m97HsEqU",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-10-24T01:19:18.454Z",
+      "expiresAt": "2025-10-31T01:19:18.453Z"
     }
   ],
   "auditLogs": [

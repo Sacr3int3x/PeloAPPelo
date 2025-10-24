@@ -1,7 +1,7 @@
 import { parse } from "node:url";
 import { sendError, sendNoContent } from "./utils/http.js";
 import { logError } from "./utils/logger.js";
-import { handleMulter, profilePhotoUpload } from "./middleware/upload.js";
+import { handleMulter, profilePhotoUpload, listingPhotoUpload } from "./middleware/upload.js";
 import { authMiddleware } from "./middleware/auth.js";
 import * as authController from "./controllers/authController.js";
 import * as listingController from "./controllers/listingController.js";
@@ -154,6 +154,38 @@ const routes = [
     handler: reputationController.listForUser,
   },
 
+  // Rutas para transacciones e intercambios
+  {
+    method: "GET",
+    pattern: /^\/api\/transactions\/swaps$/,
+    handler: transactionController.listSwaps,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/listings\/([a-zA-Z0-9_-]+)\/swap$/,
+    handler: transactionController.createSwap,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)\/accept$/,
+    handler: transactionController.acceptSwap,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)\/reject$/,
+    handler: transactionController.rejectSwap,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)\/cancel$/,
+    handler: transactionController.cancelSwap,
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)$/,
+    handler: transactionController.deleteSwap,
+  },
+
   {
     method: "GET",
     pattern: /^\/api\/admin\/overview$/,
@@ -203,56 +235,6 @@ const routes = [
     method: "GET",
     pattern: /^\/api\/admin\/raw$/,
     handler: adminController.raw,
-  },
-
-  // Rutas para transacciones e intercambios
-  {
-    method: "GET",
-    pattern: /^\/api\/transactions\/swaps$/,
-    handler: async (params) => {
-      await authMiddleware(params);
-      return transactionController.listSwaps(params);
-    },
-  },
-  {
-    method: "POST",
-    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)\/accept$/,
-    handler: async (params) => {
-      await authMiddleware(params);
-      return transactionController.acceptSwap(params);
-    },
-  },
-  {
-    method: "POST",
-    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)\/reject$/,
-    handler: async (params) => {
-      await authMiddleware(params);
-      return transactionController.rejectSwap(params);
-    },
-  },
-  {
-    method: "POST",
-    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)\/cancel$/,
-    handler: async (params) => {
-      await authMiddleware(params);
-      return transactionController.cancelSwap(params);
-    },
-  },
-  {
-    method: "DELETE",
-    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)$/,
-    handler: async (params) => {
-      await authMiddleware(params);
-      return transactionController.deleteSwap(params);
-    },
-  },
-  {
-    method: "POST",
-    pattern: /^\/api\/listings\/([a-zA-Z0-9_-]+)\/swap$/,
-    handler: async (params) => {
-      await authMiddleware(params);
-      return transactionController.createSwap(params);
-    },
   },
 ];
 

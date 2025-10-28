@@ -3,12 +3,16 @@ import { db } from "../store/db.js";
 export async function authMiddleware({ req, res }) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Error("Token no proporcionado");
+    req.user = null;
+    req.session = null;
+    return;
   }
 
   const token = authHeader.split(" ")[1];
   if (!token) {
-    throw new Error("Token no válido");
+    req.user = null;
+    req.session = null;
+    return;
   }
 
   // Buscar la sesión activa
@@ -16,13 +20,17 @@ export async function authMiddleware({ req, res }) {
     (s) => s.token === token && new Date(s.expiresAt) > new Date(),
   );
   if (!session) {
-    throw new Error("Sesión no válida o expirada");
+    req.user = null;
+    req.session = null;
+    return;
   }
 
   // Buscar el usuario
   const user = db.data.users.find((u) => u.id === session.userId);
   if (!user) {
-    throw new Error("Usuario no encontrado");
+    req.user = null;
+    req.session = null;
+    return;
   }
 
   // Agregar el usuario al request

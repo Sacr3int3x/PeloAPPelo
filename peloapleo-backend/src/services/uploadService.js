@@ -6,15 +6,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, "..", "..", "uploads");
 
 export async function saveProfilePhoto(userId, file) {
-  const userDir = path.join(UPLOADS_DIR, "profiles", userId);
-  await fs.mkdir(userDir, { recursive: true });
-
-  const filename = `profile-${Date.now()}${path.extname(file.originalname)}`;
-  const filepath = path.join(userDir, filename);
-
-  await fs.writeFile(filepath, file.buffer);
-
-  return `/uploads/profiles/${userId}/${filename}`;
+  // Subir imagen a Cloudinary
+  const { uploadImageToCloudinary } = await import("./cloudinaryService.js");
+  const filename = `profile-${userId}-${Date.now()}`;
+  const result = await uploadImageToCloudinary(file.buffer, filename);
+  return result.secure_url;
 }
 
 export async function removeProfilePhoto(userId, filename) {

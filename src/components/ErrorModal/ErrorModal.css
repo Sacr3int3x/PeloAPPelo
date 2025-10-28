@@ -33,7 +33,7 @@
 }
 
 .btn.primary {
-  background: #d32f2f;
+  background: linear-gradient(135deg, var(--color-primary) 0%, #0066cc 100%);
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -44,5 +44,5 @@
 }
 
 .btn.primary:hover {
-  background: #b71c1c;
+  background: #2563eb;
 }

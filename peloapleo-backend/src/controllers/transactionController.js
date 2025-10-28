@@ -1,65 +1,255 @@
+// ...existing code...
 import { sendJson } from "../utils/http.js";
 import { extractToken } from "../utils/auth.js";
 import { requireUser } from "../services/authService.js";
-import { getDb } from "../store/dataStore.js";
+import { getDb, saveDb } from "../store/dataStore.js";
+import { prefixedId } from "../utils/id.js";
 
-// Función temporal para listar swaps (para compatibilidad con el frontend)
-export async function listSwaps({ req, res }) {
-  const token = extractToken(req);
-  const user = await requireUser(token);
-  
-  // Por ahora retornamos un array vacío
-  // Esta funcionalidad se puede implementar completamente después
-  sendJson(res, 200, { swaps: [] });
-}
-
-// Funciones temporales para las operaciones de swap
-export async function createSwap({ req, res, params }) {
-  const token = extractToken(req);
-  const user = await requireUser(token);
-  const [listingId] = params;
-  
-  const error = new Error("La funcionalidad de intercambios está temporalmente deshabilitada.");
-  error.statusCode = 503;
-  throw error;
-}
-
-export async function acceptSwap({ req, res, params }) {
-  const token = extractToken(req);
-  const user = await requireUser(token);
-  const [swapId] = params;
-  
-  const error = new Error("La funcionalidad de intercambios está temporalmente deshabilitada.");
-  error.statusCode = 503;
-  throw error;
-}
-
+// Rechazar propuesta de intercambio
 export async function rejectSwap({ req, res, params }) {
+  const [swapId] = params;
   const token = extractToken(req);
   const user = await requireUser(token);
-  const [swapId] = params;
-  
-  const error = new Error("La funcionalidad de intercambios está temporalmente deshabilitada.");
-  error.statusCode = 503;
-  throw error;
+  const db = await getDb();
+  const swap = (db.swaps || []).find((s) => s.id === swapId);
+  if (!swap) {
+    const error = new Error("Propuesta de intercambio no encontrada");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (swap.receiverId !== user.id) {
+    const error = new Error("Solo el vendedor puede rechazar la propuesta");
+    error.statusCode = 403;
+    throw error;
+  }
+  if (swap.status !== "pending") {
+    const error = new Error("La propuesta ya fue aceptada o rechazada");
+    error.statusCode = 400;
+    throw error;
+  }
+  swap.status = "rejected";
+  swap.rejectedAt = new Date().toISOString();
+  swap.rejectReason = req.body?.reason || "";
+  await saveDb();
+  sendJson(res, 200, { success: true });
 }
 
-export async function cancelSwap({ req, res, params }) {
+// Listar propuestas de intercambio enriquecidas
+export async function listSwaps({ req, res }) {
+  let user = null;
+  let swaps = [];
+  try {
+    const token = extractToken(req);
+    user = await requireUser(token);
+    const db = await getDb();
+    swaps = (db.swaps || []).filter(
+      (swap) => swap.senderId === user.id || swap.receiverId === user.id,
+    );
+    // Enriquecer cada swap con datos completos de usuario y publicación
+    const enriched = swaps.map((swap) => {
+      const sender = db.users.find((u) => u.id === swap.senderId) || {};
+      const receiver = db.users.find((u) => u.id === swap.receiverId) || {};
+      const targetItem =
+        db.listings.find((l) => l.id === swap.receiverListingId) || {};
+      return {
+        ...swap,
+        sender: {
+          id: sender.id,
+          name: sender.name || sender.email || "",
+          email: sender.email,
+          avatar: sender.avatar || "",
+        },
+        receiver: {
+          id: receiver.id,
+          name: receiver.name || receiver.email || "",
+          email: receiver.email,
+          avatar: receiver.avatar || "",
+        },
+        targetItem: {
+          id: targetItem.id,
+          name: targetItem.name || "",
+          images: targetItem.images || [],
+          price: targetItem.price || 0,
+        },
+        moneyAmount: swap.cashAmount || 0,
+      };
+    });
+    sendJson(res, 200, { proposals: enriched });
+  } catch (err) {
+    // Si la sesión está expirada o no hay usuario, devolver lista vacía
+    sendJson(res, 200, { proposals: [] });
+  }
+}
+
+// Crear propuesta de intercambio
+export async function createSwap({ req, res, params }) {
+  const [listingId] = params;
   const token = extractToken(req);
   const user = await requireUser(token);
-  const [swapId] = params;
-  
-  const error = new Error("La funcionalidad de intercambios está temporalmente deshabilitada.");
-  error.statusCode = 503;
-  throw error;
+  const db = await getDb();
+  const listing = db.listings.find((l) => l.id === listingId);
+  if (!listing) {
+    const error = new Error("Anuncio no encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (listing.ownerId === user.id) {
+    const error = new Error(
+      "No puedes proponer intercambio a tu propio anuncio",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+  const body = req.body || {};
+  if (!body.offeredItem || !body.offeredItem.description) {
+    const error = new Error("Debes describir el artículo que ofreces");
+    error.statusCode = 400;
+    throw error;
+  }
+  const swapId = prefixedId("swp");
+  const swap = {
+    id: swapId,
+    senderId: user.id,
+    receiverId: listing.ownerId,
+    receiverListingId: listing.id,
+    offeredItem: body.offeredItem,
+    message: body.message || "",
+    cashAmount: body.cashAmount || 0,
+    cashDirection: body.cashDirection || "none",
+    createdAt: new Date().toISOString(),
+    status: "pending",
+  };
+  db.swaps = db.swaps || [];
+  db.swaps.push(swap);
+  await saveDb();
+  sendJson(res, 201, { swap });
 }
 
+// Eliminar propuesta de intercambio
 export async function deleteSwap({ req, res, params }) {
+  // Export explícito para el router
+  const [swapId] = params;
   const token = extractToken(req);
   const user = await requireUser(token);
+  const db = await getDb();
+  const swapIndex = (db.swaps || []).findIndex(
+    (swap) =>
+      swap.id === swapId &&
+      (swap.senderId === user.id || swap.receiverId === user.id),
+  );
+  if (swapIndex === -1) {
+    const error = new Error(
+      "Propuesta de intercambio no encontrada o no autorizada",
+    );
+    error.statusCode = 404;
+    throw error;
+  }
+  db.swaps.splice(swapIndex, 1);
+  await saveDb();
+  sendJson(res, 200, { success: true });
+}
+
+// Aceptar propuesta de intercambio y crear conversación
+export async function acceptSwap({ req, res, params }) {
   const [swapId] = params;
-  
-  const error = new Error("La funcionalidad de intercambios está temporalmente deshabilitada.");
-  error.statusCode = 503;
-  throw error;
+  const token = extractToken(req);
+  const user = await requireUser(token);
+  const db = await getDb();
+  const swap = (db.swaps || []).find((s) => s.id === swapId);
+  if (!swap) {
+    const error = new Error("Propuesta de intercambio no encontrada");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (swap.receiverId !== user.id) {
+    const error = new Error("Solo el vendedor puede aceptar la propuesta");
+    error.statusCode = 403;
+    throw error;
+  }
+  if (swap.status !== "pending") {
+    const error = new Error("La propuesta ya fue aceptada o rechazada");
+    error.statusCode = 400;
+    throw error;
+  }
+  // Marcar como aceptada
+  swap.status = "accepted";
+  swap.acceptedAt = new Date().toISOString();
+
+  // Crear conversación entre ambos usuarios si no existe
+  db.conversations = db.conversations || [];
+  const existingConv = db.conversations.find(
+    (conv) =>
+      conv.listingId === swap.receiverListingId &&
+      conv.participants.includes(swap.senderId) &&
+      conv.participants.includes(swap.receiverId),
+  );
+  let conversation;
+  if (existingConv) {
+    conversation = existingConv;
+    // Si la conversación existe y no tiene mensajes, agregar el mensaje automático
+    if (conversation.messages.length === 0) {
+      const swapDetails = [
+        `✅ Propuesta de intercambio aceptada`,
+        `Artículo ofrecido: ${swap.offeredItem?.description || "Sin descripción"}`,
+        swap.message ? `Mensaje: ${swap.message}` : null,
+        swap.cashAmount > 0
+          ? `Dinero adicional: $${swap.cashAmount} (${swap.cashDirection})`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      conversation.messages.push({
+        id: prefixedId("msg"),
+        sender: swap.receiverId,
+        body: swapDetails,
+        createdAt: new Date().toISOString(),
+        attachments: [],
+        readBy: [swap.receiverId],
+      });
+    }
+  } else {
+    // Crear mensaje automático con detalles del intercambio
+    const swapDetails = [
+      `✅ Propuesta de intercambio aceptada`,
+      `Artículo ofrecido: ${swap.offeredItem?.description || "Sin descripción"}`,
+      swap.message ? `Mensaje: ${swap.message}` : null,
+      swap.cashAmount > 0
+        ? `Dinero adicional: $${swap.cashAmount} (${swap.cashDirection})`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    conversation = {
+      id: prefixedId("conv"),
+      listingId: swap.receiverListingId,
+      participants: [swap.senderId, swap.receiverId],
+      messages: [
+        {
+          id: prefixedId("msg"),
+          sender: swap.receiverId,
+          body: swapDetails,
+          createdAt: new Date().toISOString(),
+          attachments: [],
+          readBy: [swap.receiverId],
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      lastReadAt: {},
+      swapInfo: {
+        swapId: swap.id,
+        offeredItem: swap.offeredItem,
+        message: swap.message,
+        cashAmount: swap.cashAmount,
+        cashDirection: swap.cashDirection,
+        senderId: swap.senderId,
+        receiverId: swap.receiverId,
+        status: swap.status,
+        acceptedAt: swap.acceptedAt,
+      },
+    };
+    db.conversations.push(conversation);
+  }
+  await saveDb();
+  sendJson(res, 200, { success: true, conversation });
 }

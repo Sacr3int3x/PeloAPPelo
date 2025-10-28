@@ -13,6 +13,7 @@ import Header from "./components/Header/Header";
 import BottomNav from "./components/BottomNav/BottomNav";
 import PageTransition from "./components/PageTransition/PageTransition";
 import LoadingPage from "./pages/LoadingPage";
+import "./styles/theme.css";
 
 // Context Providers
 import { AuthProvider, useAuth } from "./context/AuthContext";

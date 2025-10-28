@@ -29,6 +29,7 @@ import {
 // Componentes
 import InboxNav from "../components/InboxNav/InboxNav";
 import SwapProposals from "../components/SwapProposals/SwapProposals";
+import ErrorModal from "../components/ErrorModal/ErrorModal";
 
 // Estilos
 import "../styles/InboxPage.css";
@@ -84,6 +85,7 @@ function InboxPage() {
   });
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
 
   // Variables derivadas
   const isMobile = window.innerWidth <= 900;
@@ -121,7 +123,6 @@ function InboxPage() {
     const loadProposals = async () => {
       try {
         if (!token) {
-          console.log("Usuario no autenticado, omitiendo carga de propuestas");
           return;
         }
         const response = await fetchSwapProposals(token);
@@ -129,6 +130,18 @@ function InboxPage() {
       } catch (error) {
         console.error("Error al cargar las propuestas:", error);
         setSwapProposals([]);
+        // Mostrar modal si la sesión está expirada o inválida
+        if (
+          error?.message?.toLowerCase().includes("sesión") ||
+          error?.message?.toLowerCase().includes("expirada") ||
+          error?.message?.toLowerCase().includes("token")
+        ) {
+          setErrorModal({
+            open: true,
+            message:
+              "Tu sesión ha expirado o es inválida. Por favor, inicia sesión nuevamente.",
+          });
+        }
       }
     };
 
@@ -144,7 +157,10 @@ function InboxPage() {
       setSwapProposals((prev) => prev.filter((p) => p.id !== proposalId));
     } catch (error) {
       console.error("Error al eliminar la propuesta:", error);
-      alert("No se pudo eliminar la propuesta. Intenta de nuevo.");
+      setErrorModal({
+        open: true,
+        message: "No se pudo eliminar la propuesta. Intenta de nuevo.",
+      });
     }
   };
 
@@ -282,7 +298,10 @@ function InboxPage() {
       setDraftAttachments([]);
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
-      alert("No se pudo enviar el mensaje. Intenta de nuevo.");
+      setErrorModal({
+        open: true,
+        message: "No se pudo enviar el mensaje. Intenta de nuevo.",
+      });
     }
   };
 
@@ -401,6 +420,7 @@ function InboxPage() {
               ) : (
                 conversationsForUser.map((conv) => {
                   const isMyListing = conv.listing?.ownerId === user?.id;
+                  const isSwap = !!conv.swapInfo;
                   return (
                     <div
                       key={conv.id}
@@ -456,6 +476,11 @@ function InboxPage() {
                         {conv.listing && (
                           <div className="inbox-card-listing">
                             {conv.listing.name}
+                          </div>
+                        )}
+                        {isSwap && (
+                          <div className="inbox-card-swap-label">
+                            Chat de intercambio
                           </div>
                         )}
                         {conv.messages && conv.messages.length > 0 && (
@@ -618,6 +643,29 @@ function InboxPage() {
                   )}
                 </div>
 
+                {/* Info de la propuesta de intercambio si existe */}
+                {activeConversation.swapInfo && (
+                  <div className="swap-info-box">
+                    <h4>Propuesta de intercambio aceptada</h4>
+                    <div>
+                      <b>Artículo ofrecido:</b>{" "}
+                      {activeConversation.swapInfo.offeredItem?.description ||
+                        "Sin descripción"}
+                    </div>
+                    {activeConversation.swapInfo.message && (
+                      <div>
+                        <b>Mensaje:</b> {activeConversation.swapInfo.message}
+                      </div>
+                    )}
+                    {activeConversation.swapInfo.cashAmount > 0 && (
+                      <div>
+                        <b>Dinero adicional:</b> $
+                        {activeConversation.swapInfo.cashAmount} (
+                        {activeConversation.swapInfo.cashDirection})
+                      </div>
+                    )}
+                  </div>
+                )}
                 {/* Mensajes */}
                 <div className="thread-messages">
                   {activeConversation.messages?.length === 0 ? (
@@ -748,6 +796,11 @@ function InboxPage() {
         text={modal.text}
         onClose={() => setModal((m) => ({ ...m, open: false }))}
         onConfirm={modal.onConfirm}
+      />
+      <ErrorModal
+        open={errorModal.open}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ open: false, message: "" })}
       />
     </main>
   );

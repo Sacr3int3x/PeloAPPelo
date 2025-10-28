@@ -1,3 +1,14 @@
+/* Etiqueta para chat de intercambio */
+.inbox-card-swap-label {
+  background: #e0f7fa;
+  color: #00796b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin: 4px 0 0 0;
+  display: inline-block;
+}
 /* --- Modal de confirmación --- */
 .modal-overlay {
   position: fixed;
@@ -422,7 +433,7 @@ body:has(.inbox-page.has-active-chat) .bottom-nav {
   display: flex;
   gap: 12px;
   padding: 8px 18px;
-  border-radius:0 99px 99px 0px;
+  border-radius: 0 99px 99px 0px;
   border: 1px solid transparent;
   background: #f7f9fc;
   text-align: left;

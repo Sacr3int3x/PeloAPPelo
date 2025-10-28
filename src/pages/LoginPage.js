@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import "../styles/AuthPages.css";
 
 function LoginPage() {
-  const { login, user } = useAuth();
+  const { login, user, refresh } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const params = new URLSearchParams(loc.search);
@@ -29,6 +29,7 @@ function LoginPage() {
       return;
     }
     setSubmitting(true);
+    await refresh(); // Refresca la sesión antes de login
     const result = await login({ identifier, password });
     setSubmitting(false);
     if (!result?.success) {
@@ -117,7 +118,11 @@ function LoginPage() {
             </div>
           )}
 
-          <button className="btn primary block" type="submit" disabled={submitting}>
+          <button
+            className="btn primary block"
+            type="submit"
+            disabled={submitting}
+          >
             {submitting ? "Ingresando..." : "Ingresar"}
           </button>
         </form>

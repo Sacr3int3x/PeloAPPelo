@@ -22,20 +22,15 @@ function EditListingPage() {
   useEffect(() => {
     const fetchListing = async () => {
       if (!id || !data?.byId) {
-        console.log(
-          "No se puede cargar la publicación: falta ID o método byId",
-        );
         return;
       }
       const result = data.byId(id);
-      console.log("Resultado de byId:", result);
       if (result) {
         setListing(result);
         setTitle(result.name || "");
         setDescription(result.description || "");
         setImages((result.images || []).map((url) => ({ url })));
       } else {
-        console.log("No se encontró la publicación");
         setFeedback({
           type: "error",
           message: "No se encontró la publicación",
@@ -66,10 +61,15 @@ function EditListingPage() {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const auth = useAuth();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
+      // Refrescar sesión antes de actualizar
+      if (auth.refresh) {
+        await auth.refresh();
+      }
       // Aquí iría la lógica para subir imágenes al servidor
       const updatedListing = {
         ...listing,

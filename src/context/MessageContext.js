@@ -41,6 +41,7 @@ const normalizeConversation = (conversation) => {
       attachments: normalizeAttachments(message.attachments),
     })),
     transaction: conversation.transaction || null,
+    swapInfo: conversation.swapInfo || null,
   };
 };
 

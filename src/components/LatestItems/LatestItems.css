@@ -45,6 +45,7 @@
 /* Desktop */
 @media (min-width: 1024px) {
   .latest-items-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
     padding: 0;
   }

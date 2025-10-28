@@ -11,6 +11,7 @@ import { lazy, Suspense } from "react";
 // Components that should load immediately
 import Header from "./components/Header/Header";
 import BottomNav from "./components/BottomNav/BottomNav";
+import { useData } from "./context/DataContext";
 import PageTransition from "./components/PageTransition/PageTransition";
 import LoadingPage from "./pages/LoadingPage";
 import "./styles/theme.css";
@@ -64,120 +65,122 @@ function RequireAuth({ children, admin }) {
 
 // App Shell
 function Shell() {
+  const { isDesktop } = useData();
   return (
     <>
-      <Header />
+      <Header showNav={isDesktop} />
       <PageTransition />
-      <Suspense fallback={<LoadingPage />}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/item/:id" element={<ItemPage />} />
-          <Route path="/category/:slug" element={<CategoryPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-
-          {/* Rutas protegidas */}
-          <Route
-            path="/favs"
-            element={
-              <RequireAuth>
-                <FavsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/publish"
-            element={
-              <RequireAuth>
-                <PublishPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/inbox"
-            element={
-              <RequireAuth>
-                <InboxPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <RequireAuth>
-                <ProfilePage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile/listings"
-            element={
-              <RequireAuth>
-                <ProfileListingsPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/billing"
-            element={
-              <RequireAuth>
-                <BillingDetails />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/reputation"
-            element={
-              <RequireAuth>
-                <ReputationDetails />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/swap/:id"
-            element={
-              <RequireAuth>
-                <SwapDetailPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/propose-swap/:id"
-            element={
-              <RequireAuth>
-                <SwapPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile/blocked-users"
-            element={
-              <RequireAuth>
-                <BlockedUsersPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <RequireAuth admin>
-                <AdminDashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/publicar/:id"
-            element={
-              <RequireAuth>
-                <EditListingPage />
-              </RequireAuth>
-            }
-          />
-          <Route path="/help" element={<HelpCenterPage />} />
-        </Routes>
-      </Suspense>
-      <BottomNav />
+      <div className={isDesktop ? "desktop-container" : ""}>
+        <Suspense fallback={<LoadingPage />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/item/:id" element={<ItemPage />} />
+            <Route path="/category/:slug" element={<CategoryPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            {/* Rutas protegidas */}
+            <Route
+              path="/favs"
+              element={
+                <RequireAuth>
+                  <FavsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/publish"
+              element={
+                <RequireAuth>
+                  <PublishPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/inbox"
+              element={
+                <RequireAuth>
+                  <InboxPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <RequireAuth>
+                  <ProfilePage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/profile/listings"
+              element={
+                <RequireAuth>
+                  <ProfileListingsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/billing"
+              element={
+                <RequireAuth>
+                  <BillingDetails />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/reputation"
+              element={
+                <RequireAuth>
+                  <ReputationDetails />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/swap/:id"
+              element={
+                <RequireAuth>
+                  <SwapDetailPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/propose-swap/:id"
+              element={
+                <RequireAuth>
+                  <SwapPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/profile/blocked-users"
+              element={
+                <RequireAuth>
+                  <BlockedUsersPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <RequireAuth admin>
+                  <AdminDashboard />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/publicar/:id"
+              element={
+                <RequireAuth>
+                  <EditListingPage />
+                </RequireAuth>
+              }
+            />
+            <Route path="/help" element={<HelpCenterPage />} />
+          </Routes>
+        </Suspense>
+      </div>
+      {!isDesktop && <BottomNav />}
     </>
   );
 }

@@ -56,3 +56,16 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
 }
+
+@media (min-width: 900px) {
+  .home-category-nav {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+  .category-filter-scroll {
+    justify-content: center;
+    gap: 16px;
+  }
+}

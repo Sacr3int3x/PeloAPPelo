@@ -6,28 +6,55 @@ import React, {
   useMemo,
   useState,
 } from "react";
+
 import { apiRequest, buildImageUrl } from "../services/api";
 import { realtime } from "../services/realtime";
 import { useAuth } from "./AuthContext";
 import { read, write } from "../utils/helpers";
 import { LS } from "../utils/constants";
 
-const DataCtx = createContext(null);
+// Funciones auxiliares globales
+const normalizeImages = (images) => {
+  if (Array.isArray(images)) {
+    return images.map((src) => buildImageUrl(src));
+  }
+  return [];
+};
 
+const withNormalizedImages = (item) => {
+  if (!item) return item;
+  return {
+    ...item,
+    images: normalizeImages(item.images),
+  };
+};
+
+// Hook para detectar si el usuario está en escritorio
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const ua = navigator.userAgent.toLowerCase();
+    const isPC =
+      ua.includes("windows") ||
+      ua.includes("macintosh") ||
+      ua.includes("linux");
+    return isPC || window.innerWidth >= 1024;
+  });
+  useEffect(() => {
+    function handleResize() {
+      setIsDesktop(window.innerWidth >= 1024);
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  return isDesktop;
+}
+
+const DataCtx = createContext(null);
 export const useData = () => useContext(DataCtx);
 
-const normalizeImages = (images) =>
-  Array.isArray(images) ? images.map((src) => buildImageUrl(src)) : [];
-
-const withNormalizedImages = (item) =>
-  item
-    ? {
-        ...item,
-        images: normalizeImages(item.images),
-      }
-    : item;
-
 export function DataProvider({ children }) {
+  const isDesktop = useIsDesktop();
   const { token, user } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -54,48 +81,24 @@ export function DataProvider({ children }) {
   }, []);
 
   const fetchFavorites = useCallback(async () => {
-    if (!token) {
-      setFavorites(new Set());
-      setFavoriteItems(new Map());
-      return;
-    }
+    setLoading(true);
     try {
-      const response = await apiRequest("/me/favorites", { token });
-      const ids = new Set((response.ids || []).map(String));
+      const response = await apiRequest("/favorites");
+      const favSet = new Set(
+        response.items?.map((item) => String(item.id)) || [],
+      );
+      setFavorites(favSet);
       const favMap = new Map();
-      (response.items || []).map(withNormalizedImages).forEach((item) => {
-        favMap.set(String(item.id), item);
+      (response.items || []).forEach((item) => {
+        favMap.set(String(item.id), withNormalizedImages(item));
       });
-      setFavorites(ids);
       setFavoriteItems(favMap);
     } catch (error) {
-      console.error("Error obteniendo favoritos", error);
+      console.error("No se pudieron cargar los favoritos", error);
+    } finally {
+      setLoading(false);
     }
-  }, [token]);
-
-  // Detectar cambio de usuario y recargar datos
-  useEffect(() => {
-    const userId = user?.id || null;
-
-    if (userId !== currentUserId) {
-      // El usuario cambió o cerró sesión
-      setCurrentUserId(userId);
-
-      if (!userId) {
-        // Logout: limpiar todo
-        setItems([]);
-        setFavorites(new Set());
-        setFavoriteItems(new Map());
-      } else {
-        // Login o cambio de usuario: recargar datos
-        setItems([]); // Limpiar datos anteriores
-        setFavorites(new Set());
-        setFavoriteItems(new Map());
-        fetchListings();
-        fetchFavorites();
-      }
-    }
-  }, [user?.id, currentUserId, fetchListings, fetchFavorites]);
+  }, []);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -109,10 +112,8 @@ export function DataProvider({ children }) {
     }
   }, [fetchListings, currentUserId]);
 
-  // Ya no necesitamos este useEffect separado para fetchFavorites
-  // porque se llama desde el useEffect de cambio de usuario
-
   useEffect(() => {
+    // Suscripción a eventos realtime para crear/actualizar publicaciones
     const handleCreate = (event) => {
       const next = withNormalizedImages(event.detail?.item);
       if (!next) return;
@@ -202,7 +203,12 @@ export function DataProvider({ children }) {
           token,
         });
         const item = withNormalizedImages(response.item);
-        setItems((prev) => [item, ...prev]);
+        setItems((prev) => {
+          if (prev.some((i) => String(i.id) === String(item.id))) {
+            return prev;
+          }
+          return [item, ...prev];
+        });
         return { success: true, item };
       } catch (error) {
         return {
@@ -487,6 +493,7 @@ export function DataProvider({ children }) {
       deleteListing,
       refresh: fetchListings,
       user,
+      isDesktop,
     }),
     [
       visibleItems,
@@ -507,6 +514,7 @@ export function DataProvider({ children }) {
       deleteListing,
       fetchListings,
       user,
+      isDesktop,
     ],
   );
 

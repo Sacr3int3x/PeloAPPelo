@@ -1,3 +1,4 @@
+import "dotenv/config";
 import http from "node:http";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";

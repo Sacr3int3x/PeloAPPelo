@@ -1,7 +1,6 @@
 import { getDb, withDb } from "../store/dataStore.js";
-import { LISTING_UPLOADS_DIR, MAX_LISTING_IMAGES } from "../config.js";
-import { ensureDir, isDataUrl, saveDataUrl } from "../utils/file.js";
-import { toPublicPath } from "../utils/path.js";
+import { MAX_LISTING_IMAGES } from "../config.js";
+import { isDataUrl } from "../utils/file.js";
 import { prefixedId } from "../utils/id.js";
 import { emitEvent } from "../realtime/socketHub.js";
 
@@ -142,18 +141,20 @@ export async function getListingById(id) {
 
 async function storeImages(images, listingId) {
   if (!Array.isArray(images)) return [];
-  await ensureDir(LISTING_UPLOADS_DIR);
   const stored = [];
   let index = 0;
+  const { uploadImageToCloudinary } = await import("./cloudinaryService.js");
   for (const image of images) {
     if (!image || index >= MAX_LISTING_IMAGES) break;
     if (isDataUrl(image)) {
-      const savedPath = await saveDataUrl(
-        image,
-        LISTING_UPLOADS_DIR,
-        `${listingId}_${index}`,
-      );
-      stored.push(toPublicPath(savedPath));
+      // Convertir dataURL a buffer
+      const match = /^data:(.+);base64,(.*)$/i.exec(image);
+      if (!match) continue;
+      const [, , base64] = match;
+      const buffer = Buffer.from(base64, "base64");
+      const filename = `listing-${listingId}-${index}-${Date.now()}`;
+      const result = await uploadImageToCloudinary(buffer, filename);
+      stored.push(result.secure_url);
     } else if (typeof image === "string") {
       stored.push(image);
     }

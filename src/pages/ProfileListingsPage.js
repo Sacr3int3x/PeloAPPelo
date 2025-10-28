@@ -86,7 +86,6 @@ function ProfileListingsPage() {
   };
 
   const handleEdit = (listing) => {
-    console.log("Editando publicación:", listing);
     if (!listing.id) {
       setFeedback("Error: No se puede editar la publicación");
       return;

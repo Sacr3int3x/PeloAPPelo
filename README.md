@@ -1,70 +1,180 @@
-# Getting Started with Create React App
+# PeloAPelo 🔄
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**PeloAPelo** es una plataforma de marketplace peer-to-peer enfocada en intercambios y compra-venta de artículos entre usuarios verificados. La aplicación pone especial énfasis en la seguridad con verificación de identidad y un sistema de reputación basado en calificaciones.
 
-## Available Scripts
+## 🚀 Características Principales
 
-In the project directory, you can run:
+- **Marketplace de artículos**: Publicación, búsqueda y navegación por categorías
+- **Sistema de intercambios (Swaps)**: Los usuarios pueden proponer intercambios de artículos
+- **Verificación de identidad**: Proceso de verificación con foto y documento oficial
+- **Sistema de reputación**: Calificaciones y comentarios entre usuarios
+- **Mensajería en tiempo real**: Chat bidireccional entre compradores y vendedores
+- **Favoritos**: Guarda artículos de interés
+- **Dashboard de administrador**: Panel para moderación y gestión de usuarios
+- **Notificaciones**: Alertas en tiempo real de mensajes y propuestas
 
-### `npm start`
+## 🛠️ Tecnologías
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Frontend
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **React 19** con React Router DOM
+- **Context API** para gestión de estado
+- **CSS Modules** para estilos
+- **React Icons** para iconografía
+- **WebSockets** para comunicación en tiempo real
 
-### `npm test`
+### Backend
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **Node.js** con servidor HTTP nativo
+- **LowDB** como base de datos JSON
+- **WebSockets (ws)** para comunicación bidireccional
+- **Multer** para manejo de archivos
+- **NanoID** para generación de IDs únicos
 
-### `npm run build`
+## 📋 Requisitos Previos
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- Node.js 16+ y npm
+- Puerto 3000 disponible (frontend)
+- Puerto 4000 disponible (backend)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🔧 Instalación
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 1. Clonar el repositorio
 
-### `npm run eject`
+```bash
+git clone https://github.com/Sacr3int3x/PeloAPPelo.git
+cd peloapelo
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 2. Instalar dependencias del frontend
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm install
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 3. Instalar dependencias del backend
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+cd peloapleo-backend
+npm install
+cd ..
+```
 
-## Learn More
+### 4. Configurar variables de entorno
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Crea un archivo `.env` en la raíz del proyecto:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+REACT_APP_API_BASE=http://localhost:4000/api
+```
 
-### Code Splitting
+## ▶️ Ejecución
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Modo Desarrollo
 
-### Analyzing the Bundle Size
+**Terminal 1 - Backend:**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```bash
+cd peloapleo-backend
+npm run dev
+```
 
-### Making a Progressive Web App
+**Terminal 2 - Frontend:**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+npm start
+```
 
-### Advanced Configuration
+La aplicación estará disponible en `http://localhost:3000`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Modo Producción
 
-### Deployment
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Los archivos optimizados estarán en la carpeta `build/`
 
-### `npm run build` fails to minify
+## 📁 Estructura del Proyecto
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```
+peloapelo/
+├── src/
+│   ├── components/      # Componentes reutilizables
+│   ├── context/         # Context API (Auth, Data, Messages)
+│   ├── pages/           # Páginas de la aplicación
+│   ├── services/        # Servicios API y comunicación
+│   ├── styles/          # Estilos globales y CSS modules
+│   ├── utils/           # Utilidades y helpers
+│   └── App.js           # Componente raíz con rutas
+├── peloapleo-backend/
+│   ├── src/
+│   │   ├── controllers/ # Lógica de controladores
+│   │   ├── services/    # Lógica de negocio
+│   │   ├── middleware/  # Middlewares personalizados
+│   │   ├── realtime/    # WebSocket handlers
+│   │   └── server.js    # Servidor principal
+│   ├── data/            # Base de datos JSON
+│   └── uploads/         # Archivos subidos
+├── public/              # Archivos estáticos
+└── docs/                # Documentación adicional
+```
+
+## 🔐 Seguridad
+
+- Autenticación basada en tokens JWT
+- Verificación de identidad con documento oficial
+- Validación de archivos subidos
+- Sistema de bloqueo de usuarios
+- Moderación de contenido por administradores
+
+## 🧪 Testing
+
+```bash
+npm test
+```
+
+## 📱 Funcionalidades por Rol
+
+### Usuario Regular
+
+- Publicar y editar artículos
+- Buscar y filtrar productos
+- Proponer intercambios
+- Chat con otros usuarios
+- Calificar transacciones
+- Gestionar favoritos
+
+### Administrador
+
+- Ver todos los usuarios y publicaciones
+- Moderar contenido
+- Gestionar calificaciones
+- Ver estadísticas del sistema
+
+## 🤝 Contribuir
+
+Lee [CONTRIBUTING.md](docs/CONTRIBUTING.md) para conocer el proceso de contribución.
+
+## 📄 Licencia
+
+Este proyecto está bajo licencia MIT.
+
+## 👥 Autores
+
+- **Equipo PeloAPelo** - Desarrollo inicial
+
+## 📞 Contacto
+
+Para dudas o sugerencias, consulta la página de [Centro de Ayuda](http://localhost:3000/#/help) dentro de la aplicación.
+
+---
+
+**Nota**: Esta aplicación es un proyecto educativo/demostrativo. Para uso en producción, considera implementar:
+
+- Base de datos robusta (PostgreSQL, MongoDB)
+- Sistema de autenticación OAuth
+- Procesamiento de pagos
+- Hosting escalable
+- Sistema de backup automatizado
+- Monitoreo y logging centralizado

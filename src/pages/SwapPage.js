@@ -23,7 +23,7 @@ function SwapPage() {
   const { id } = useParams();
   const { byId } = useData();
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const auth = useAuth();
   const item = byId(id);
 
   const [offer, setOffer] = useState({
@@ -124,6 +124,14 @@ function SwapPage() {
 
     setIsSubmitting(true);
     try {
+      // Refrescar sesión antes de enviar
+      if (auth.refresh) {
+        await auth.refresh();
+      }
+      // Obtener el token actualizado del contexto
+      const latestToken =
+        typeof auth.token === "function" ? auth.token() : auth.token;
+      console.log("Token usado para intercambio:", latestToken);
       const proposal = {
         offeredItem: {
           description: offer.title,
@@ -140,14 +148,14 @@ function SwapPage() {
               : "none",
       };
 
-      await createSwapProposal(item.id, proposal, token);
+      await createSwapProposal(item.id, proposal, latestToken);
       setSubmitted(true);
     } catch (error) {
       console.error("Error al enviar la propuesta:", error);
       setErrors((prev) => ({
         ...prev,
         submit:
-          "Hubo un error al enviar tu propuesta. Por favor, intenta de nuevo.",
+          "Hubo un error al enviar tu propuesta. Por favor, inicia sesión nuevamente si el problema persiste.",
       }));
     } finally {
       setIsSubmitting(false);

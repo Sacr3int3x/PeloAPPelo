@@ -219,7 +219,6 @@ function ItemPage() {
               alt={`Perfil de ${sellerName}`}
               className="seller-photo"
               onError={(event) => {
-                console.log("Error cargando imagen:", sellerAvatar);
                 event.currentTarget.onerror = null;
                 event.currentTarget.src = defaultAvatar;
               }}

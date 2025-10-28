@@ -19,7 +19,7 @@ function passwordScore(password) {
 }
 
 function RegisterPage() {
-  const { register: registerUser, user } = useAuth();
+  const { register: registerUser, user, refresh } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const params = new URLSearchParams(loc.search);
@@ -74,6 +74,7 @@ function RegisterPage() {
       return;
     }
     setSubmitting(true);
+    await refresh(); // Refresca la sesión antes de registrar
     const result = await registerUser({
       email,
       password,
@@ -253,7 +254,9 @@ function RegisterPage() {
                 className="auth-input-append"
                 onClick={() => setConfirmVisible((v) => !v)}
                 aria-label={
-                  confirmVisible ? "Ocultar confirmación" : "Mostrar confirmación"
+                  confirmVisible
+                    ? "Ocultar confirmación"
+                    : "Mostrar confirmación"
                 }
               >
                 {confirmVisible ? (
@@ -294,7 +297,11 @@ function RegisterPage() {
             </div>
           )}
 
-          <button className="btn primary block" type="submit" disabled={submitting}>
+          <button
+            className="btn primary block"
+            type="submit"
+            disabled={submitting}
+          >
             {submitting ? "Creando cuenta..." : "Crear cuenta"}
           </button>
         </form>

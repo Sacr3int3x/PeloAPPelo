@@ -9,7 +9,8 @@ import LoadingOverlay from "../components/LoadingOverlay/LoadingOverlay";
 import "./PublishPage.css";
 
 function PublishPage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  const user = auth.user;
   const nav = useNavigate();
   const { create } = useData();
 
@@ -191,18 +192,22 @@ function PublishPage() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (!validateStepOne()) {
       setFeedback("Revisa los campos marcados antes de publicar.");
       setStep(1);
       return;
     }
+    // Refrescar sesión antes de publicar
+    if (auth.refresh) {
+      await auth.refresh();
+    }
     const payload = {
       ...formData,
       price: Number(formData.price || 0),
       images: photos.map((photo) => photo.src),
-      ownerEmail: user?.email || "anon@demo.com",
+      ownerEmail: auth.user?.email || "anon@demo.com",
       plan: selectedPlan,
       status: "active",
     };

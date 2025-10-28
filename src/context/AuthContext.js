@@ -134,8 +134,12 @@ export function AuthProvider({ children }) {
   const refresh = useCallback(async () => {
     if (!token) return;
     try {
-      const response = await apiRequest("/auth/me", { token });
-      persistSession(response.user, token);
+      // Usar el nuevo endpoint para refrescar el token
+      const response = await apiRequest("/auth/refresh", {
+        method: "POST",
+        token,
+      });
+      persistSession(response.user, response.token);
       return { success: true };
     } catch (error) {
       console.error("Error actualizando datos del usuario:", error);

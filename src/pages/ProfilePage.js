@@ -30,13 +30,20 @@ function ProfilePage() {
 
   const handleProfilePhotoChange = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !token) return;
+    if (!file) return;
 
     setUploadPending(true);
     setUploadError("");
 
     try {
-      await uploadProfilePhoto(file, token);
+      // Refrescar sesión antes de enviar
+      if (auth.refresh) {
+        await auth.refresh();
+      }
+      // Usar el token actualizado del contexto
+      const latestToken =
+        typeof auth.token === "function" ? auth.token() : auth.token;
+      await uploadProfilePhoto(file, latestToken);
       // Recargar los datos del usuario para obtener la nueva foto
       const refreshResult = await auth.refresh();
       if (!refreshResult.success) {

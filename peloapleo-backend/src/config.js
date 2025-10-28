@@ -19,18 +19,24 @@ const userOrigins = (process.env.APP_ORIGIN || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+// Orígenes permitidos en desarrollo
 const localOrigins = [];
-for (let port = 3000; port <= 3020; port += 1) {
-  localOrigins.push(`http://localhost:${port}`);
-  localOrigins.push(`http://127.0.0.1:${port}`);
+if (process.env.NODE_ENV !== "production") {
+  for (let port = 3000; port <= 3020; port += 1) {
+    localOrigins.push(`http://localhost:${port}`);
+    localOrigins.push(`http://127.0.0.1:${port}`);
+  }
 }
 
-export const ALLOWED_ORIGINS = Array.from(
-  new Set([...userOrigins, ...localOrigins]),
-);
+// En producción, solo permitir orígenes específicos
+export const ALLOWED_ORIGINS =
+  process.env.NODE_ENV === "production"
+    ? userOrigins
+    : Array.from(new Set([...userOrigins, ...localOrigins]));
 
 export const TOKEN_TTL_MS =
-  Number.parseInt(process.env.TOKEN_TTL_MS || "", 10) || 1000 * 60 * 60 * 24 * 7;
+  Number.parseInt(process.env.TOKEN_TTL_MS || "", 10) ||
+  1000 * 60 * 60 * 24 * 7;
 
 export const MAX_LISTING_IMAGES = 5;
 export const MAX_MESSAGE_ATTACHMENTS = 6;

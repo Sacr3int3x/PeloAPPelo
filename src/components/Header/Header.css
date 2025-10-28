@@ -1,3 +1,77 @@
+.nav-link-active-desktop {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-weight: 600;
+}
+/* Nav minimalista para escritorio */
+.header-nav-desktop {
+  margin-left: auto;
+}
+
+.nav-list-desktop {
+  display: flex;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.nav-item-desktop {
+  display: flex;
+  align-items: center;
+}
+
+.nav-link-desktop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.nav-link-desktop:hover,
+.nav-link-desktop:focus {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.nav-icon-desktop {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-badge-desktop {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.7em;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 6px;
+}
+
+.nav-label-desktop {
+  display: inline-block;
+}
+
+.nav-fab-desktop .nav-link-desktop {
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(16, 137, 198, 0.08);
+}
 .header {
   position: relative;
   top: 0;

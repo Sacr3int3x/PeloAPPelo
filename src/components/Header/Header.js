@@ -1,11 +1,14 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import { useData } from "../../context/DataContext";
 import ErrorBoundary from "../ErrorBoundary/ErrorBoundary";
 import logo from "../../logo.png";
 import "./Header.css";
 
-function HeaderContent() {
+import { MdHome, MdFavorite, MdAdd, MdChat, MdPerson } from "react-icons/md";
+import { useMessages } from "../../context/MessageContext";
+
+function HeaderContent({ showNav }) {
   const nav = useNavigate();
   const location = useLocation();
   const data = useData();
@@ -42,12 +45,20 @@ function HeaderContent() {
     const handleScroll = () => {
       setPinned(window.scrollY <= 0);
     };
-    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
 
   const shouldPin = isAuthPage || pinned;
+
+  const { unreadCount } = useMessages();
+  const navLinks = [
+    { to: "/", icon: MdHome, label: "Inicio" },
+    { to: "/favs", icon: MdFavorite, label: "Favoritos" },
+    { to: "/publish", icon: MdAdd, label: "Publicar", fab: true },
+    { to: "/inbox", icon: MdChat, label: "Mensajes", badge: unreadCount },
+    { to: "/profile", icon: MdPerson, label: "Perfil" },
+  ];
 
   return (
     <header
@@ -57,20 +68,16 @@ function HeaderContent() {
     >
       <div className="header-inner">
         {showBrand && (
-          <button
-            type="button"
-            className="header-brand"
-            onClick={() => nav("/")}
-            aria-label="Ir al inicio"
-          >
+          <NavLink to="/" className="header-brand" aria-label="Ir al inicio">
             <img
               src={logo}
               alt="peloAPPelo"
               className="header-brand-img"
               loading="lazy"
+              style={{ width: 32, height: 32, objectFit: "contain" }}
             />
             <span className="header-brand-text">peloAPPelo</span>
-          </button>
+          </NavLink>
         )}
 
         {showSearch && (
@@ -83,15 +90,48 @@ function HeaderContent() {
             />
           </form>
         )}
+
+        {showNav && (
+          <nav className="header-nav-desktop">
+            <ul className="nav-list-desktop">
+              {navLinks.map((link, idx) => (
+                <li
+                  key={link.to}
+                  className={link.fab ? "nav-fab-desktop" : "nav-item-desktop"}
+                >
+                  <NavLink
+                    to={link.to}
+                    className={({ isActive }) =>
+                      `nav-link-desktop${isActive ? " nav-link-active-desktop" : ""}`
+                    }
+                  >
+                    <span className="nav-icon-desktop">
+                      <link.icon size={22} />
+                      {link.badge ? (
+                        <span
+                          className="nav-badge-desktop"
+                          aria-label={`${link.badge} mensajes nuevos`}
+                        >
+                          {link.badge}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="nav-label-desktop">{link.label}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
       </div>
     </header>
   );
 }
 
-export default function Header() {
+export default function Header({ showNav }) {
   return (
     <ErrorBoundary>
-      <HeaderContent />
+      <HeaderContent showNav={showNav} />
     </ErrorBoundary>
   );
 }

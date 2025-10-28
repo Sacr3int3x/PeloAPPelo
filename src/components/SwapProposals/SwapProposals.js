@@ -178,11 +178,13 @@ function SwapProposals({ proposals = [], currentUserId, onDelete }) {
                     </span>
                   </div>
                   {/* Motivo de rechazo visible solo para el comprador */}
-                  {isSender && proposal.status === "rejected" && proposal.rejectReason && (
-                    <div className="swap-reject-reason">
-                      <b>Motivo del rechazo:</b> {proposal.rejectReason}
-                    </div>
-                  )}
+                  {isSender &&
+                    proposal.status === "rejected" &&
+                    proposal.rejectReason && (
+                      <div className="swap-reject-reason">
+                        <b>Motivo del rechazo:</b> {proposal.rejectReason}
+                      </div>
+                    )}
                 </div>
 
                 {!selectionMode && (

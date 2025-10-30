@@ -1,4 +1,3 @@
-// ...existing code...
 import { sendJson } from "../utils/http.js";
 import { extractToken } from "../utils/auth.js";
 import { requireUser } from "../services/authService.js";
@@ -252,4 +251,34 @@ export async function acceptSwap({ req, res, params }) {
   }
   await saveDb();
   sendJson(res, 200, { success: true, conversation });
+}
+
+// Cancelar propuesta de intercambio (solo el remitente puede cancelar)
+export async function cancelSwap({ req, res, params }) {
+  const [swapId] = params;
+  const token = extractToken(req);
+  const user = await requireUser(token);
+  const db = await getDb();
+  const swap = (db.swaps || []).find((s) => s.id === swapId);
+  if (!swap) {
+    const error = new Error("Propuesta de intercambio no encontrada");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (swap.senderId !== user.id) {
+    const error = new Error("Solo el remitente puede cancelar la propuesta");
+    error.statusCode = 403;
+    throw error;
+  }
+  if (swap.status !== "pending") {
+    const error = new Error(
+      "La propuesta ya fue aceptada, rechazada o cancelada",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+  swap.status = "cancelled";
+  swap.cancelledAt = new Date().toISOString();
+  await saveDb();
+  sendJson(res, 200, { success: true });
 }

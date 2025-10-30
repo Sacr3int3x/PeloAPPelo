@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 import { createSwapProposal } from "../services/transactions";
+import VerificationRequiredModal from "../components/VerificationRequiredModal/VerificationRequiredModal";
 import { fmt } from "../utils/format";
 import {
   MdArrowBack,
@@ -25,6 +26,7 @@ function SwapPage() {
   const navigate = useNavigate();
   const auth = useAuth();
   const item = byId(id);
+  const isVerified = auth.user?.verificationStatus === "approved";
 
   const [offer, setOffer] = useState({
     title: "",
@@ -37,6 +39,7 @@ function SwapPage() {
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   if (!item) {
     return (
@@ -121,6 +124,10 @@ function SwapPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    if (!isVerified) {
+      setShowVerificationModal(true);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -174,6 +181,27 @@ function SwapPage() {
         </button>
         <h1 className="swap-title">Proponer intercambio</h1>
       </section>
+
+      {!isVerified && (
+        <section className="panel verification-banner">
+          <div className="verification-banner-content">
+            <div className="verification-banner-icon">🔒</div>
+            <div className="verification-banner-text">
+              <h3>Verificación requerida</h3>
+              <p>
+                Para proponer intercambios, necesitas verificar tu identidad.
+                Esto ayuda a mantener la plataforma segura.
+              </p>
+            </div>
+            <button
+              className="btn primary"
+              onClick={() => navigate("/profile")}
+            >
+              Verificar identidad
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="swap-item-card">
         <div className="swap-item-badge">Artículo solicitado</div>
@@ -408,7 +436,7 @@ function SwapPage() {
               <button
                 type="submit"
                 className="swap-btn-primary"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isVerified}
               >
                 <MdSwapHoriz />
                 {isSubmitting ? "Enviando..." : "Enviar propuesta"}
@@ -447,6 +475,14 @@ function SwapPage() {
           </div>
         )}
       </section>
+      <VerificationRequiredModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        onStartVerification={() => {
+          setShowVerificationModal(false);
+          navigate("/profile"); // O a la página de verificación
+        }}
+      />
     </main>
   );
 }

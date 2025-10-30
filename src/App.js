@@ -7,14 +7,17 @@ import {
   Navigate,
 } from "react-router-dom";
 import { lazy, Suspense } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Components that should load immediately
 import Header from "./components/Header/Header";
 import BottomNav from "./components/BottomNav/BottomNav";
 import { useData } from "./context/DataContext";
-import PageTransition from "./components/PageTransition/PageTransition";
 import LoadingPage from "./pages/LoadingPage";
 import "./styles/theme.css";
+import "./styles/animations.css";
 
 // Context Providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -39,6 +42,7 @@ const ProfileListingsPage = lazy(() => import("./pages/ProfileListingsPage"));
 const SwapPage = lazy(() => import("./pages/SwapPage"));
 const SwapDetailPage = lazy(() => import("./pages/SwapDetailPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminUserProfilePage = lazy(() => import("./pages/AdminUserProfilePage"));
 const EditListingPage = lazy(() => import("./pages/EditListingPage"));
 const HelpCenterPage = lazy(() => import("./pages/HelpCenterPage"));
 
@@ -63,121 +67,149 @@ function RequireAuth({ children, admin }) {
   return children;
 }
 
-// App Shell
+// Animated Routes Component
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        transition={{
+          duration: 0.3,
+          ease: [0.25, 0.46, 0.45, 0.94], // Cubic bezier similar to iOS
+        }}
+        style={{ width: "100%", minHeight: "100vh" }}
+      >
+        <Routes location={location}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/item/:id" element={<ItemPage />} />
+          <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          {/* Rutas protegidas */}
+          <Route
+            path="/favs"
+            element={
+              <RequireAuth>
+                <FavsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/publish"
+            element={
+              <RequireAuth>
+                <PublishPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/inbox"
+            element={
+              <RequireAuth>
+                <InboxPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <RequireAuth>
+                <ProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/profile/listings"
+            element={
+              <RequireAuth>
+                <ProfileListingsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <RequireAuth>
+                <BillingDetails />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/reputation"
+            element={
+              <RequireAuth>
+                <ReputationDetails />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/swap/:id"
+            element={
+              <RequireAuth>
+                <SwapDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/propose-swap/:id"
+            element={
+              <RequireAuth>
+                <SwapPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/profile/blocked-users"
+            element={
+              <RequireAuth>
+                <BlockedUsersPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <RequireAuth admin>
+                <AdminDashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/user/:id"
+            element={
+              <RequireAuth admin>
+                <AdminUserProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/publicar/:id"
+            element={
+              <RequireAuth>
+                <EditListingPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="/help" element={<HelpCenterPage />} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+} // App Shell
 function Shell() {
   const { isDesktop } = useData();
   return (
     <>
       <Header showNav={isDesktop} />
-      <PageTransition />
       <div className={isDesktop ? "desktop-container" : ""}>
         <Suspense fallback={<LoadingPage />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/item/:id" element={<ItemPage />} />
-            <Route path="/category/:slug" element={<CategoryPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            {/* Rutas protegidas */}
-            <Route
-              path="/favs"
-              element={
-                <RequireAuth>
-                  <FavsPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/publish"
-              element={
-                <RequireAuth>
-                  <PublishPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/inbox"
-              element={
-                <RequireAuth>
-                  <InboxPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <RequireAuth>
-                  <ProfilePage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/profile/listings"
-              element={
-                <RequireAuth>
-                  <ProfileListingsPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/billing"
-              element={
-                <RequireAuth>
-                  <BillingDetails />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/reputation"
-              element={
-                <RequireAuth>
-                  <ReputationDetails />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/swap/:id"
-              element={
-                <RequireAuth>
-                  <SwapDetailPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/propose-swap/:id"
-              element={
-                <RequireAuth>
-                  <SwapPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/profile/blocked-users"
-              element={
-                <RequireAuth>
-                  <BlockedUsersPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <RequireAuth admin>
-                  <AdminDashboard />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/publicar/:id"
-              element={
-                <RequireAuth>
-                  <EditListingPage />
-                </RequireAuth>
-              }
-            />
-            <Route path="/help" element={<HelpCenterPage />} />
-          </Routes>
+          <AnimatedRoutes />
         </Suspense>
       </div>
       {!isDesktop && <BottomNav />}
@@ -198,6 +230,18 @@ export default function App() {
         <DataProvider>
           <MessageProvider>
             <Shell />
+            <ToastContainer
+              position="top-right"
+              autoClose={4000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
           </MessageProvider>
         </DataProvider>
       </AuthProvider>

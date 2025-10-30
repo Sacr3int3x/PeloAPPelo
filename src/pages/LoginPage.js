@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaGoogle, FaFacebookF, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaGoogle, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import "../styles/AuthPages.css";
 
 function LoginPage() {
-  const { login, user, refresh } = useAuth();
+  const { login, loginWithGoogle, user, refresh } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const params = new URLSearchParams(loc.search);
@@ -15,6 +15,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   useEffect(() => {
@@ -38,6 +39,16 @@ function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError("");
+    setGoogleSubmitting(true);
+    const result = await loginWithGoogle();
+    setGoogleSubmitting(false);
+    if (!result?.success) {
+      setError(result?.error || "No se pudo iniciar sesión con Google.");
+    }
+  };
+
   return (
     <main className="container page auth-page">
       <div className="auth-card">
@@ -49,13 +60,14 @@ function LoginPage() {
         </header>
 
         <div className="auth-social">
-          <button type="button" className="btn outline sm auth-social-btn">
+          <button
+            type="button"
+            className="btn outline sm auth-social-btn"
+            onClick={handleGoogleLogin}
+            disabled={googleSubmitting || submitting}
+          >
             <FaGoogle aria-hidden />
-            Continuar con Google
-          </button>
-          <button type="button" className="btn outline sm auth-social-btn">
-            <FaFacebookF aria-hidden />
-            Continuar con Facebook
+            {googleSubmitting ? "Conectando..." : "Continuar con Google"}
           </button>
         </div>
 

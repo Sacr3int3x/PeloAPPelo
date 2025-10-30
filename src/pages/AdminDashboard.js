@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi";
+import { toast } from "react-toastify";
 import "../styles/CategoryPage.css";
 import Select from "../components/Select/Select";
+import ImageModal from "../components/ImageModal/ImageModal";
 import {
   fetchAdminAudit,
   fetchAdminConversations,
@@ -22,6 +24,7 @@ const tabs = [
   { id: "listings", label: "Publicaciones" },
   { id: "users", label: "Usuarios" },
   { id: "conversations", label: "Conversaciones" },
+  { id: "verifications", label: "Verificaciones" },
   { id: "reputations", label: "Reputaciones" },
   { id: "audit", label: "Auditoría" },
   { id: "raw", label: "Datos crudos" },
@@ -243,6 +246,22 @@ function AdminDashboard() {
   const [rawLoading, setRawLoading] = useState(false);
   const [rawError, setRawError] = useState("");
 
+  const [verificationFilters, setVerificationFilters] = useState({
+    status: "",
+  });
+  const [verificationData, setVerificationData] = useState({
+    list: [],
+    total: 0,
+  });
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+
+  const [imageModal, setImageModal] = useState({
+    isOpen: false,
+    imageSrc: "",
+    title: "",
+  });
+
   const isAdmin = Boolean(user?.isAdmin);
 
   const loadOverview = useCallback(async () => {
@@ -409,6 +428,81 @@ function AdminDashboard() {
     }
   }, [token, rawDump, rawLoading]);
 
+  const loadVerifications = useCallback(async () => {
+    if (!token) return;
+    setVerificationLoading(true);
+    setVerificationError("");
+    try {
+      const response = await fetch(`/api/admin/verification/all`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Error al cargar verificaciones");
+      const data = await response.json();
+      // The backend returns { verifications: [...] }, but we need { list: [...], total: number }
+      let verifications = data.verifications || [];
+
+      // Apply status filter
+      if (verificationFilters.status) {
+        verifications = verifications.filter(
+          (v) => v.verificationStatus === verificationFilters.status,
+        );
+      }
+
+      setVerificationData({
+        list: verifications,
+        total: verifications.length,
+      });
+    } catch (error) {
+      setVerificationError(error.message);
+    } finally {
+      setVerificationLoading(false);
+    }
+  }, [token, verificationFilters.status]);
+
+  const handleVerificationAction = async (verificationId, action) => {
+    try {
+      const endpoint = action === "approve" ? "approve" : "reject";
+      const response = await fetch(
+        `/api/admin/verification/${endpoint}/${verificationId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      if (!response.ok)
+        throw new Error(
+          `Error al ${action === "approve" ? "aprobar" : "rechazar"} verificación`,
+        );
+      toast.success(
+        `Verificación ${action === "approve" ? "aprobada" : "rechazada"} exitosamente`,
+      );
+      loadVerifications(); // Recargar la lista
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const openImageModal = (imageSrc, title) => {
+    setImageModal({
+      isOpen: true,
+      imageSrc,
+      title,
+    });
+  };
+
+  const closeImageModal = () => {
+    setImageModal({
+      isOpen: false,
+      imageSrc: "",
+      title: "",
+    });
+  };
+
   useEffect(() => {
     if (!isAdmin || !token) return;
     if (!overviewLoaded) {
@@ -452,6 +546,12 @@ function AdminDashboard() {
       ensureRaw();
     }
   }, [tab, isAdmin, token, ensureRaw]);
+
+  useEffect(() => {
+    if (isAdmin && token && tab === "verifications") {
+      loadVerifications();
+    }
+  }, [tab, isAdmin, token, loadVerifications]);
 
   const overviewTotals = overview?.totals || {};
 
@@ -1309,6 +1409,161 @@ function AdminDashboard() {
     </section>
   );
 
+  const renderVerifications = () => (
+    <section className="admin-section">
+      <form
+        className="admin-filters"
+        onSubmit={(event) => {
+          event.preventDefault();
+          loadVerifications();
+        }}
+      >
+        <select
+          className="input"
+          value={verificationFilters.status}
+          onChange={(event) =>
+            setVerificationFilters((prev) => ({
+              ...prev,
+              status: event.target.value,
+            }))
+          }
+        >
+          <option value="">Todos los estados</option>
+          <option value="pending">Pendientes</option>
+          <option value="approved">Aprobadas</option>
+          <option value="rejected">Rechazadas</option>
+        </select>
+        <button type="submit" className="btn primary">
+          Aplicar filtros
+        </button>
+      </form>
+
+      {verificationError && (
+        <div className="admin-error">{verificationError}</div>
+      )}
+
+      <div className="admin-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Email</th>
+              <th>Documentos</th>
+              <th>Estado</th>
+              <th>Fecha de solicitud</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {verificationData.list.map((verification) => (
+              <tr key={verification.id}>
+                <td>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => navigate(`/admin/user/${verification.id}`)}
+                  >
+                    {verification.name || "—"}
+                  </button>
+                </td>
+                <td>{verification.email || "—"}</td>
+                <td>
+                  {verification.identityDocuments ? (
+                    <div className="verification-documents">
+                      <div className="document-thumbnails">
+                        {verification.identityDocuments.id_front && (
+                          <img
+                            src={verification.identityDocuments.id_front}
+                            alt="Frente del documento"
+                            className="document-thumb"
+                            onClick={() =>
+                              openImageModal(
+                                verification.identityDocuments.id_front,
+                                "Frente del documento",
+                              )
+                            }
+                          />
+                        )}
+                        {verification.identityDocuments.id_back && (
+                          <img
+                            src={verification.identityDocuments.id_back}
+                            alt="Reverso del documento"
+                            className="document-thumb"
+                            onClick={() =>
+                              openImageModal(
+                                verification.identityDocuments.id_back,
+                                "Reverso del documento",
+                              )
+                            }
+                          />
+                        )}
+                        {verification.identityDocuments.selfie && (
+                          <img
+                            src={verification.identityDocuments.selfie}
+                            alt="Selfie"
+                            className="document-thumb"
+                            onClick={() =>
+                              openImageModal(
+                                verification.identityDocuments.selfie,
+                                "Selfie",
+                              )
+                            }
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    "Sin documentos"
+                  )}
+                </td>
+                <td>
+                  <span
+                    className={`admin-chip status-${verification.verificationStatus || "pending"}`}
+                  >
+                    {verification.verificationStatus === "approved"
+                      ? "Aprobada"
+                      : verification.verificationStatus === "rejected"
+                        ? "Rechazada"
+                        : "Pendiente"}
+                  </span>
+                </td>
+                <td>
+                  {verification.verificationRequestedAt
+                    ? new Date(
+                        verification.verificationRequestedAt,
+                      ).toLocaleString()
+                    : "—"}
+                </td>
+                <td className="admin-actions">
+                  <button
+                    type="button"
+                    className="btn success sm"
+                    onClick={() =>
+                      handleVerificationAction(verification.id, "approve")
+                    }
+                  >
+                    Aprobar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn danger sm"
+                    onClick={() =>
+                      handleVerificationAction(verification.id, "reject")
+                    }
+                  >
+                    Rechazar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {verificationLoading && <p className="muted">Cargando verificaciones…</p>}
+    </section>
+  );
+
   return (
     <main className="container page admin-page">
       <div className="category-header-bar" style={{ marginBottom: 24 }}>
@@ -1361,6 +1616,14 @@ function AdminDashboard() {
       {tab === "reputations" && renderReputations()}
       {tab === "audit" && renderAudit()}
       {tab === "raw" && renderRaw()}
+      {tab === "verifications" && renderVerifications()}
+
+      <ImageModal
+        isOpen={imageModal.isOpen}
+        imageSrc={imageModal.imageSrc}
+        title={imageModal.title}
+        onClose={closeImageModal}
+      />
     </main>
   );
 }

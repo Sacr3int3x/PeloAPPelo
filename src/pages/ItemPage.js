@@ -5,6 +5,7 @@ import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../context/MessageContext";
 import Rating from "../components/Rating/Rating";
+import VerificationRequiredModal from "../components/VerificationRequiredModal/VerificationRequiredModal";
 import { clamp, fmt } from "../utils/format";
 import "./ItemPage.css";
 
@@ -16,6 +17,7 @@ function ItemPage() {
   const { startConversation } = useMessages();
   const { id } = useParams();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const item = byId(id);
   if (!item) return <main className="container page">No encontrado.</main>;
@@ -47,6 +49,7 @@ function ItemPage() {
     user?.email && sellerEmail
       ? user.email.toLowerCase() === sellerEmail.toLowerCase()
       : false;
+  const isVerified = user?.verificationStatus === "approved";
   const planLabel = {
     premium: "Destacado Premium",
     plus: "Destacado Plus",
@@ -280,6 +283,10 @@ function ItemPage() {
                 return;
               }
               if (isOwner) return;
+              if (!isVerified) {
+                setShowVerificationModal(true);
+                return;
+              }
 
               try {
                 // Validar que tenemos el email del vendedor
@@ -333,8 +340,8 @@ function ItemPage() {
                 }
               }
             }}
-            disabled={isOwner}
-            aria-disabled={isOwner}
+            disabled={isOwner || !isVerified}
+            aria-disabled={isOwner || !isVerified}
           >
             <span className="item-action-title">Enviar mensaje</span>
             <span className="item-action-sub">
@@ -343,19 +350,34 @@ function ItemPage() {
           </button>
           <button
             className="item-action-button item-action-button--primary"
-            onClick={() =>
-              user
-                ? nav(`/propose-swap/${item.id}`)
-                : nav(
-                    `/login?next=${encodeURIComponent(`/propose-swap/${item.id}`)}`,
-                  )
-            }
+            onClick={() => {
+              if (!user) {
+                nav(
+                  `/login?next=${encodeURIComponent(`/propose-swap/${item.id}`)}`,
+                );
+                return;
+              }
+              if (!isVerified) {
+                setShowVerificationModal(true);
+                return;
+              }
+              nav(`/propose-swap/${item.id}`);
+            }}
+            disabled={!isVerified}
           >
             <span className="item-action-title">Proponer intercambio</span>
             <span className="item-action-sub">Ofrece un artículo a cambio</span>
           </button>
         </div>
       </section>
+      <VerificationRequiredModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        onStartVerification={() => {
+          setShowVerificationModal(false);
+          nav("/profile"); // O a la página de verificación
+        }}
+      />
     </main>
   );
 }

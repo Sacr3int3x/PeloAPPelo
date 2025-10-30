@@ -153,7 +153,8 @@ export async function users({ req, res, query }) {
 
   const paged = applyPagination(filtered, limit, offset).map((entry) => ({
     ...sanitizeUser(entry),
-    listings: db.listings.filter((listing) => listing.ownerId === entry.id).length,
+    listings: db.listings.filter((listing) => listing.ownerId === entry.id)
+      .length,
   }));
 
   sendJson(res, 200, {
@@ -161,6 +162,34 @@ export async function users({ req, res, query }) {
     total: filtered.length,
     limit,
     offset,
+  });
+}
+
+export async function getUser({ req, res, params }) {
+  const token = extractToken(req);
+  const user = await requireUser(token);
+  ensureAdmin(user);
+  const [userId] = params;
+
+  const db = await getDb();
+  const entry = db.users.find((user) => user.id === userId);
+  if (!entry) {
+    const error = new Error("Usuario no encontrado.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const listingsCount = db.listings.filter(
+    (listing) => listing.ownerId === entry.id,
+  ).length;
+  const reputations = (db.reputations || []).filter(
+    (rep) => rep.toUserId === entry.id || rep.fromUserId === entry.id,
+  );
+
+  sendJson(res, 200, {
+    ...sanitizeUser(entry),
+    listingsCount,
+    reputationsCount: reputations.length,
   });
 }
 
@@ -280,7 +309,9 @@ export async function conversations({ req, res, query }) {
       const participants = conversation.participants
         .map((userId) => db.users.find((entry) => entry.id === userId))
         .filter(Boolean);
-      const listing = db.listings.find((entry) => entry.id === conversation.listingId);
+      const listing = db.listings.find(
+        (entry) => entry.id === conversation.listingId,
+      );
       return {
         id: conversation.id,
         listingId: conversation.listingId,
@@ -291,7 +322,9 @@ export async function conversations({ req, res, query }) {
           name: participant.name,
         })),
         messages: conversation.messages.map((message) => {
-          const author = db.users.find((entry) => entry.id === message.senderId);
+          const author = db.users.find(
+            (entry) => entry.id === message.senderId,
+          );
           return {
             id: message.id,
             sender: author ? { id: author.id, email: author.email } : null,
@@ -306,9 +339,10 @@ export async function conversations({ req, res, query }) {
     })
     .filter((conversation) => {
       if (!search) return true;
-      const participantMatch = conversation.participants.some((participant) =>
-        participant.email?.toLowerCase().includes(search) ||
-        participant.name?.toLowerCase().includes(search),
+      const participantMatch = conversation.participants.some(
+        (participant) =>
+          participant.email?.toLowerCase().includes(search) ||
+          participant.name?.toLowerCase().includes(search),
       );
       const listingMatch = conversation.listing?.name
         ?.toLowerCase()
@@ -354,7 +388,8 @@ export async function updateUser({ req, res, params }) {
       throw error;
     }
     if (body.name !== undefined) entry.name = String(body.name).trim();
-    if (body.location !== undefined) entry.location = String(body.location).trim();
+    if (body.location !== undefined)
+      entry.location = String(body.location).trim();
     if (body.phone !== undefined) entry.phone = String(body.phone).trim();
     if (body.role !== undefined) {
       const normalizedRole = String(body.role).toLowerCase();

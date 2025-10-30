@@ -1,23 +1,8 @@
-export async function refreshToken({ req, res }) {
-  const token = extractToken(req);
-  const user = await getUserFromToken(token);
-  if (!user) {
-    const error = new Error("No autorizado");
-    error.statusCode = 401;
-    throw error;
-  }
-  // Generar nuevo token y sesión
-  const session = await createSession(user.id);
-  sendJson(res, 200, {
-    user: sanitizeUser(user),
-    token: session.token,
-    expiresAt: session.expiresAt,
-  });
-}
 import { sendJson } from "../utils/http.js";
 import { extractToken } from "../utils/auth.js";
 import {
   authenticate,
+  authenticateWithGoogle,
   createSession,
   createUser,
   getUserFromToken,
@@ -88,4 +73,18 @@ export async function logout({ req, res }) {
   const token = extractToken(req);
   await logoutSession(token);
   sendJson(res, 200, { success: true });
+}
+
+export async function googleAuth({ req, res }) {
+  const body = req.body || {};
+  const { idToken } = body;
+
+  if (!idToken) {
+    const error = new Error("Token de Google requerido");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const result = await authenticateWithGoogle(idToken);
+  sendJson(res, 200, result);
 }

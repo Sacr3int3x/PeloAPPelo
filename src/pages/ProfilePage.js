@@ -8,6 +8,8 @@ import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { fetchMyReputations } from "../services/transactions";
 import { uploadProfilePhoto } from "../services/profile";
+import VerificationStatus from "../components/VerificationStatus/VerificationStatus";
+import PendingRatings from "../components/PendingRatings/PendingRatings";
 import "./ProfilePage.css";
 
 function ProfilePage() {
@@ -174,6 +176,13 @@ function ProfilePage() {
           </div>
         </div>
       </section>
+
+      {/* Sección de Verificación de Identidad */}
+      <VerificationStatus />
+
+      {/* Sección de Valoraciones Pendientes */}
+      <PendingRatings />
+
       <section className="panel profile-menu">
         <div className="category-header-bar" style={{ marginBottom: 24 }}>
           <button

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import logo from "../../logo.png";
 import "./Hero.css";
 
 function Hero() {
+  const { user } = useAuth();
   const scrollerRef = useRef(null);
   const smoothRef = useRef(false);
   const programmaticRef = useRef(false);
@@ -155,7 +157,7 @@ function Hero() {
                   <h1 className="h1">{slide.title}</h1>
                 </div>
                 <p className="hero-text">{slide.text}</p>
-                {!!slide.ctas.length && (
+                {!!slide.ctas.length && !user && (
                   <div className="hero-cta">
                     {slide.ctas.map((cta, j) => (
                       <Link

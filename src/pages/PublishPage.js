@@ -6,6 +6,7 @@ import { CATALOG } from "../utils/constants";
 import { fmt } from "../utils/format";
 import Select from "../components/Select/Select";
 import LoadingOverlay from "../components/LoadingOverlay/LoadingOverlay";
+import VerificationStatus from "../components/VerificationStatus";
 import "./PublishPage.css";
 
 function PublishPage() {
@@ -14,7 +15,10 @@ function PublishPage() {
   const nav = useNavigate();
   const { create } = useData();
 
-  // Recuperar datos guardados o usar valores iniciales
+  // Verificar si el usuario está verificado
+  const isVerified = user?.verificationStatus === "approved";
+
+  // Todos los hooks deben estar antes de cualquier return condicional
   const [formData, setFormData] = useState(() => {
     const savedData = localStorage.getItem("publishFormData");
     if (savedData) {
@@ -95,6 +99,151 @@ function PublishPage() {
     set.add("otros");
     return Array.from(set);
   }, [catKey, formData.brand]);
+
+  const numericPrice = Number(formData.price || 0);
+
+  const plans = useMemo(() => {
+    const premiumCost = numericPrice > 0 ? numericPrice * 0.1 : 0;
+    const plusCost = numericPrice > 0 ? numericPrice * 0.05 : 0;
+    return [
+      {
+        id: "premium",
+        title: "Premium",
+        badge: "Mayor visibilidad",
+        price: `REF ${fmt(premiumCost)}`,
+        description:
+          "Aparece en la sección de recientes, búsquedas y destaca sobre todas.",
+        features: [
+          "Primer lugar en Home",
+          "Prioridad en búsquedas",
+          "Etiqueta destacada",
+        ],
+      },
+      {
+        id: "plus",
+        title: "Plus",
+        badge: "Recomendado",
+        price: `REF ${fmt(plusCost)}`,
+        description:
+          "Posición preferente en resultados, ideal para captar más visitas.",
+        features: ["Prioridad media en búsquedas", "Hasta 3 fotos extra"],
+      },
+      {
+        id: "gratis",
+        title: "Gratis",
+        badge: "Sin costo",
+        price: "REF 0",
+        description:
+          "Publicación estándar. Aparece luego de las Premium y Plus.",
+        features: ["Publicación básica", "Sin prioridad en búsquedas"],
+      },
+    ];
+  }, [numericPrice]);
+
+  const loaderSteps = useMemo(
+    () => [
+      { label: "Preparando tu publicación…", duration: 1100 },
+      { label: "Subiendo tus imágenes…", duration: 1700 },
+      { label: "Aplicando el plan seleccionado…", duration: 1200 },
+      { label: "Publicando en peloAPPelo…", duration: 1300 },
+      { label: "Compartiendo tu anuncio…", duration: 1000 },
+    ],
+    [],
+  );
+
+  const clearStoredData = useCallback(() => {
+    localStorage.removeItem("publishFormData");
+    localStorage.removeItem("publishFormPhotos");
+  }, []);
+
+  const finishLoading = useCallback(() => {
+    if (!pendingPayload) {
+      setShowLoader(false);
+      clearStoredData();
+      setTimeout(() => {
+        nav("/");
+      }, 500);
+      return;
+    }
+    const payload = pendingPayload;
+    setPendingPayload(null);
+    create(payload).then((result) => {
+      setShowLoader(false);
+      if (result?.success) {
+        clearStoredData();
+        setTimeout(() => {
+          nav("/");
+        }, 500);
+      } else if (result?.error) {
+        setFeedback(result.error);
+      } else {
+        setFeedback("No se pudo publicar el anuncio. Inténtalo nuevamente.");
+      }
+    });
+  }, [create, nav, pendingPayload, clearStoredData]);
+
+  const previewImages =
+    photos.length > 0 ? photos.map((p) => p.src) : ["/images/placeholder.jpg"];
+
+  // Si no está verificado, mostrar solo el componente de verificación
+  if (!isVerified) {
+    return (
+      <main className="container page publish-page">
+        <section className="panel publish-intro">
+          <h1 className="publish-title">Crear nuevo anuncio</h1>
+          <p className="publish-subtitle">
+            Para publicar artículos en peloAPPelo, primero necesitas verificar
+            tu identidad.
+          </p>
+        </section>
+
+        <VerificationStatus />
+
+        <div
+          className="panel"
+          style={{ textAlign: "center", marginTop: "2rem" }}
+        >
+          <p style={{ color: "#666", marginBottom: "1rem" }}>
+            Una vez verificada tu identidad, podrás crear y publicar tus
+            anuncios.
+          </p>
+          <Link to="/" className="btn outline">
+            Volver al inicio
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // Si no está verificado, mostrar solo el componente de verificación
+  if (!isVerified) {
+    return (
+      <main className="container page publish-page">
+        <section className="panel publish-intro">
+          <h1 className="publish-title">Crear nuevo anuncio</h1>
+          <p className="publish-subtitle">
+            Para publicar artículos en peloAPPelo, primero necesitas verificar
+            tu identidad.
+          </p>
+        </section>
+
+        <VerificationStatus />
+
+        <div
+          className="panel"
+          style={{ textAlign: "center", marginTop: "2rem" }}
+        >
+          <p style={{ color: "#666", marginBottom: "1rem" }}>
+            Una vez verificada tu identidad, podrás crear y publicar tus
+            anuncios.
+          </p>
+          <Link to="/" className="btn outline">
+            Volver al inicio
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   const toDataUrl = (file) =>
     new Promise((resolve, reject) => {
@@ -215,88 +364,6 @@ function PublishPage() {
     setShowLoader(true);
   };
 
-  const numericPrice = Number(formData.price || 0);
-
-  const plans = useMemo(() => {
-    const premiumCost = numericPrice > 0 ? numericPrice * 0.1 : 0;
-    const plusCost = numericPrice > 0 ? numericPrice * 0.05 : 0;
-    return [
-      {
-        id: "premium",
-        title: "Premium",
-        badge: "Mayor visibilidad",
-        price: `REF ${fmt(premiumCost)}`,
-        description:
-          "Aparece en la sección de recientes, búsquedas y destaca sobre todas.",
-        features: [
-          "Primer lugar en Home",
-          "Prioridad en búsquedas",
-          "Etiqueta destacada",
-        ],
-      },
-      {
-        id: "plus",
-        title: "Plus",
-        badge: "Recomendado",
-        price: `REF ${fmt(plusCost)}`,
-        description:
-          "Posición preferente en resultados, ideal para captar más visitas.",
-        features: ["Prioridad media en búsquedas", "Hasta 3 fotos extra"],
-      },
-      {
-        id: "gratis",
-        title: "Gratis",
-        badge: "Sin costo",
-        price: "REF 0",
-        description:
-          "Publicación estándar. Aparece luego de las Premium y Plus.",
-        features: ["Publicación básica", "Sin prioridad en búsquedas"],
-      },
-    ];
-  }, [numericPrice]);
-
-  const loaderSteps = useMemo(
-    () => [
-      { label: "Preparando tu publicación…", duration: 1100 },
-      { label: "Subiendo tus imágenes…", duration: 1700 },
-      { label: "Aplicando el plan seleccionado…", duration: 1200 },
-      { label: "Publicando en peloAPPelo…", duration: 1300 },
-      { label: "Compartiendo tu anuncio…", duration: 1000 },
-    ],
-    [],
-  );
-
-  const clearStoredData = useCallback(() => {
-    localStorage.removeItem("publishFormData");
-    localStorage.removeItem("publishFormPhotos");
-  }, []);
-
-  const finishLoading = useCallback(() => {
-    if (!pendingPayload) {
-      setShowLoader(false);
-      clearStoredData();
-      setTimeout(() => {
-        nav("/");
-      }, 500);
-      return;
-    }
-    const payload = pendingPayload;
-    setPendingPayload(null);
-    create(payload).then((result) => {
-      setShowLoader(false);
-      if (result?.success) {
-        clearStoredData();
-        setTimeout(() => {
-          nav("/");
-        }, 500);
-      } else if (result?.error) {
-        setFeedback(result.error);
-      } else {
-        setFeedback("No se pudo publicar el anuncio. Inténtalo nuevamente.");
-      }
-    });
-  }, [create, nav, pendingPayload, clearStoredData]);
-
   const goNext = () => {
     if (step === 1) {
       if (!validateStepOne()) {
@@ -312,9 +379,6 @@ function PublishPage() {
     setFeedback("");
     setStep((s) => Math.max(1, s - 1));
   };
-
-  const previewImages =
-    photos.length > 0 ? photos.map((p) => p.src) : ["/images/placeholder.jpg"];
 
   return (
     <main className="container page publish-page">

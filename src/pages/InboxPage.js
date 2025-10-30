@@ -30,6 +30,7 @@ import {
 import InboxNav from "../components/InboxNav/InboxNav";
 import SwapProposals from "../components/SwapProposals/SwapProposals";
 import ErrorModal from "../components/ErrorModal/ErrorModal";
+import VerificationRequiredModal from "../components/VerificationRequiredModal/VerificationRequiredModal";
 
 // Estilos
 import "../styles/InboxPage.css";
@@ -86,10 +87,12 @@ function InboxPage() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState([]);
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   // Variables derivadas
   const isMobile = window.innerWidth <= 900;
   const myEmail = user?.email || user?.id;
+  const isVerified = user?.verificationStatus === "approved";
 
   // Efectos
   useEffect(() => {
@@ -286,6 +289,10 @@ function InboxPage() {
     e.preventDefault();
     if ((!draft.trim() && draftAttachments.length === 0) || !activeConversation)
       return;
+    if (!isVerified) {
+      setShowVerificationModal(true);
+      return;
+    }
 
     try {
       await sendMessageAction(
@@ -358,6 +365,28 @@ function InboxPage() {
           <InboxNav activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
       </div>
+
+      {!isVerified && (
+        <section className="panel verification-banner">
+          <div className="verification-banner-content">
+            <div className="verification-banner-icon">🔒</div>
+            <div className="verification-banner-text">
+              <h3>Verificación requerida</h3>
+              <p>
+                Para enviar mensajes y participar en intercambios, necesitas
+                verificar tu identidad. Esto ayuda a mantener la plataforma
+                segura.
+              </p>
+            </div>
+            <button
+              className="btn primary"
+              onClick={() => navigate("/profile")}
+            >
+              Verificar identidad
+            </button>
+          </div>
+        </section>
+      )}
 
       {activeTab === "messages" ? (
         <div className="inbox-shell">
@@ -746,7 +775,10 @@ function InboxPage() {
                       type="button"
                       onClick={handleSendMessage}
                       className="btn-composer-action primary"
-                      disabled={!draft.trim() && draftAttachments.length === 0}
+                      disabled={
+                        (!draft.trim() && draftAttachments.length === 0) ||
+                        !isVerified
+                      }
                       title="Enviar mensaje"
                     >
                       <MdSend />
@@ -801,6 +833,14 @@ function InboxPage() {
         open={errorModal.open}
         message={errorModal.message}
         onClose={() => setErrorModal({ open: false, message: "" })}
+      />
+      <VerificationRequiredModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        onStartVerification={() => {
+          setShowVerificationModal(false);
+          navigate("/profile");
+        }}
       />
     </main>
   );

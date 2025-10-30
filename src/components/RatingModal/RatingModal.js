@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FiX, FiStar, FiCheck } from "react-icons/fi";
-import { completeRating } from "../../services/ratings";
+import { submitReputation } from "../../services/transactions";
 import { useAuth } from "../../context/AuthContext";
 import "./RatingModal.css";
 
@@ -24,12 +24,21 @@ const RatingModal = ({ pendingRating, isOpen, onClose, onSuccess }) => {
     setError("");
 
     try {
-      await completeRating(pendingRating.id, { rating, comment }, token);
+      await submitReputation(
+        { transactionId: pendingRating.id, rating, comment },
+        token,
+      );
       onSuccess?.();
       handleClose();
     } catch (error) {
       console.error("Error al calificar:", error);
-      setError(error.response?.data?.error || "Error al enviar calificación");
+      if (error.code === "VERIFICATION_REQUIRED") {
+        setError(
+          "Debes verificar tu identidad antes de calificar usuarios. Ve a tu perfil para completar la verificación.",
+        );
+      } else {
+        setError(error.response?.data?.error || "Error al enviar calificación");
+      }
       setLoading(false);
     }
   };
@@ -48,9 +57,14 @@ const RatingModal = ({ pendingRating, isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content rating-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-content rating-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h2>Calificar {toUser.role === "seller" ? "Vendedor" : "Comprador"}</h2>
+          <h2>
+            Calificar {toUser.role === "seller" ? "Vendedor" : "Comprador"}
+          </h2>
           <button className="modal-close-btn" onClick={handleClose}>
             <FiX />
           </button>
@@ -67,8 +81,8 @@ const RatingModal = ({ pendingRating, isOpen, onClose, onSuccess }) => {
             </div>
 
             <div className="user-card">
-              <img 
-                src={toUser.avatar || "/images/avatars/default.png"} 
+              <img
+                src={toUser.avatar || "/images/avatars/default.png"}
                 alt={toUser.name}
                 className="user-avatar"
               />

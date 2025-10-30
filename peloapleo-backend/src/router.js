@@ -3,6 +3,7 @@ import { sendError, sendNoContent } from "./utils/http.js";
 import { logError } from "./utils/logger.js";
 import { handleMulter, profilePhotoUpload } from "./middleware/upload.js";
 import { authMiddleware } from "./middleware/auth.js";
+import { requireVerifiedUser } from "./middleware/verification.js";
 import * as authController from "./controllers/authController.js";
 import * as listingController from "./controllers/listingController.js";
 import * as favoriteController from "./controllers/favoriteController.js";
@@ -11,12 +12,18 @@ import * as adminController from "./controllers/adminController.js";
 import * as reputationController from "./controllers/reputationController.js";
 import * as profileController from "./controllers/profileController.js";
 import * as transactionController from "./controllers/transactionController.js";
+import * as verificationController from "./controllers/verificationController.js";
 
 const routes = [
   {
     method: "POST",
     pattern: /^\/api\/auth\/refresh$/,
     handler: authController.refreshToken,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/auth\/google$/,
+    handler: authController.googleAuth,
   },
   {
     method: "POST",
@@ -74,7 +81,10 @@ const routes = [
   {
     method: "POST",
     pattern: /^\/api\/listings$/,
-    handler: listingController.create,
+    handler: async (params) => {
+      await requireVerifiedUser(params.req, params.res, () => {});
+      return listingController.create(params);
+    },
   },
   {
     method: "GET",
@@ -186,6 +196,11 @@ const routes = [
   },
   {
     method: "GET",
+    pattern: /^\/api\/admin\/users\/([a-zA-Z0-9_-]+)$/,
+    handler: adminController.getUser,
+  },
+  {
+    method: "GET",
     pattern: /^\/api\/admin\/listings$/,
     handler: adminController.listings,
   },
@@ -208,6 +223,43 @@ const routes = [
     method: "GET",
     pattern: /^\/api\/admin\/raw$/,
     handler: adminController.raw,
+  },
+
+  // Rutas de verificación de identidad
+  {
+    method: "POST",
+    pattern: /^\/api\/verification\/submit$/,
+    handler: verificationController.submitDocuments,
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/verification\/status$/,
+    handler: verificationController.getStatus,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/admin\/verification\/approve\/([a-zA-Z0-9_-]+)$/,
+    handler: verificationController.approve,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/admin\/verification\/reject\/([a-zA-Z0-9_-]+)$/,
+    handler: verificationController.reject,
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/admin\/verification\/pending$/,
+    handler: verificationController.listPending,
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/admin\/verification\/all$/,
+    handler: verificationController.listAll,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/admin\/verification\/reset\/([a-zA-Z0-9_-]+)$/,
+    handler: verificationController.reset,
   },
 
   // Rutas para transacciones e intercambios
@@ -255,7 +307,7 @@ const routes = [
     method: "POST",
     pattern: /^\/api\/listings\/([a-zA-Z0-9_-]+)\/swap$/,
     handler: async (params) => {
-      await authMiddleware(params);
+      await requireVerifiedUser(params.req, params.res, () => {});
       return transactionController.createSwap(params);
     },
   },

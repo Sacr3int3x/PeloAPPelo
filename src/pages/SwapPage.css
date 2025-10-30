@@ -793,3 +793,68 @@
     height: 90px;
   }
 }
+
+/* ===== BANNER DE VERIFICACIÓN ===== */
+.verification-banner {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border: 1px solid #ffc107;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+}
+
+.verification-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.verification-banner-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.verification-banner-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.verification-banner-text h3 {
+  margin: 0 0 8px 0;
+  color: #856404;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.verification-banner-text p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.verification-banner .btn {
+  flex-shrink: 0;
+  background: #ffc107;
+  color: #212529;
+  border: 1px solid #ffc107;
+  font-weight: 600;
+}
+
+.verification-banner .btn:hover {
+  background: #e0a800;
+  border-color: #d39e00;
+}
+
+@media (max-width: 600px) {
+  .verification-banner-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .verification-banner-text {
+    min-width: auto;
+  }
+}

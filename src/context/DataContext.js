@@ -61,7 +61,6 @@ export function DataProvider({ children }) {
   const [favorites, setFavorites] = useState(() => new Set());
   const [favoriteItems, setFavoriteItems] = useState(() => new Map());
   const [searches, setSearches] = useState(() => read(LS.searches, []));
-  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     write(LS.searches, searches);
@@ -80,37 +79,9 @@ export function DataProvider({ children }) {
     }
   }, []);
 
-  const fetchFavorites = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await apiRequest("/favorites");
-      const favSet = new Set(
-        response.items?.map((item) => String(item.id)) || [],
-      );
-      setFavorites(favSet);
-      const favMap = new Map();
-      (response.items || []).forEach((item) => {
-        favMap.set(String(item.id), withNormalizedImages(item));
-      });
-      setFavoriteItems(favMap);
-    } catch (error) {
-      console.error("No se pudieron cargar los favoritos", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (!currentUserId) {
-      fetchListings();
-    }
-  }, [fetchListings, currentUserId]);
-
-  useEffect(() => {
-    if (!currentUserId) {
-      fetchListings();
-    }
-  }, [fetchListings, currentUserId]);
+    fetchListings();
+  }, [fetchListings]);
 
   useEffect(() => {
     // Suscripción a eventos realtime para crear/actualizar publicaciones

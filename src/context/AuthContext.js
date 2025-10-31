@@ -112,10 +112,16 @@ export function AuthProvider({ children }) {
       }
     };
 
-    realtime.addEventListener("verification.status.changed", handleVerificationChange);
+    realtime.addEventListener(
+      "verification.status.changed",
+      handleVerificationChange,
+    );
 
     return () => {
-      realtime.removeEventListener("verification.status.changed", handleVerificationChange);
+      realtime.removeEventListener(
+        "verification.status.changed",
+        handleVerificationChange,
+      );
     };
   }, [user, refresh]);
 

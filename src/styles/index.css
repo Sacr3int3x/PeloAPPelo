@@ -130,3 +130,183 @@ hr {
   border-bottom: 1px solid var(--color-border);
   margin: clamp(24px, 6vw, 48px) 0;
 }
+
+/* === ESTILOS PARA APP NATIVA === */
+
+/* Eliminar scroll horizontal y mejorar el comportamiento táctil */
+* {
+  -webkit-overflow-scrolling: touch;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Evitar zoom en inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="search"],
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-user-select: text;
+  user-select: text;
+  font-size: 16px; /* Previene zoom en iOS */
+}
+
+/* Mejorar el comportamiento del scroll */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--color-background);
+}
+
+/* Asegurar que la app ocupe toda la pantalla */
+#root {
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height */
+  background: var(--color-background);
+}
+
+/* Estilos para que se vea más nativa en Android */
+@media screen and (display-mode: standalone) {
+  body {
+    background: var(--color-background);
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ocultar barras de scroll pero mantener funcionalidad */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mejorar el rendimiento en dispositivos móviles */
+  * {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  /* Eliminar cualquier margen o padding del navegador */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--color-background) !important;
+  }
+
+  /* Asegurar que no haya barras de navegación visibles */
+  .app-container {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Safe areas para dispositivos con notch */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .safe-area-bottom {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-left {
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .safe-area-right {
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+}
+
+/* Animaciones más suaves para mejor experiencia nativa */
+* {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Mejorar el rendimiento de las transiciones */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateX(0%);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateX(0%);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Estilos específicos para ocultar elementos del navegador en apps */
+@media all and (display-mode: standalone) {
+  /* Ocultar cualquier elemento que parezca de navegador */
+  .browser-ui {
+    display: none !important;
+  }
+
+  /* Asegurar fondo sólido */
+  html, body, #root {
+    background-color: var(--color-background) !important;
+  }
+
+  /* Mejorar el touch feedback */
+  button, .btn, [role="button"] {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Prevenir bounce scroll en iOS */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+}
+
+/* Estilos para hacer que se vea como una app nativa completa */
+.app-native-mode {
+  /* Eliminar cualquier espacio en blanco */
+  margin: 0 !important;
+  padding: 0 !important;
+
+  /* Fondo consistente */
+  background: var(--color-background) !important;
+
+  /* Altura completa */
+  height: 100vh !important;
+  height: 100dvh !important;
+
+  /* Sin scroll horizontal */
+  overflow-x: hidden !important;
+}
+
+/* Ocultar indicadores de que es una web app */
+@media (prefers-color-scheme: dark) {
+  .app-native-mode {
+    background: #000000 !important;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .app-native-mode {
+    background: #ffffff !important;
+  }
+}

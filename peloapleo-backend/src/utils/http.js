@@ -9,10 +9,16 @@ export function getRequestOrigin(req) {
 
 export function applyCors(req, res) {
   const origin = getRequestOrigin(req);
+
+  // Para apps móviles (como Capacitor), permitir sin origin header
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
+  } else {
+    // Permitir cualquier origen si no hay header origin (apps móviles)
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
+
   res.setHeader(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Requested-With",

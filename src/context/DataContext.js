@@ -32,6 +32,10 @@ const withNormalizedImages = (item) => {
 // Hook para detectar si el usuario está en escritorio
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(() => {
+    // Si estamos en Capacitor (APK), siempre mostrar versión móvil
+    if (typeof window !== "undefined" && window.Capacitor) {
+      return false;
+    }
     if (typeof window === "undefined") return false;
     const ua = navigator.userAgent.toLowerCase();
     const isPC =
@@ -40,13 +44,21 @@ function useIsDesktop() {
       ua.includes("linux");
     return isPC || window.innerWidth >= 1024;
   });
+
   useEffect(() => {
+    // Si estamos en Capacitor, mantener siempre en modo móvil
+    if (typeof window !== "undefined" && window.Capacitor) {
+      setIsDesktop(false);
+      return;
+    }
+
     function handleResize() {
       setIsDesktop(window.innerWidth >= 1024);
     }
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
   return isDesktop;
 }
 

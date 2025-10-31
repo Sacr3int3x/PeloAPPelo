@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useMessages } from '../../context/MessageContext';
-import RatingModal from '../RatingModal/RatingModal';
-import './PendingRatings.css';
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useMessages } from "../../context/MessageContext";
+import RatingModal from "../RatingModal/RatingModal";
+import "./PendingRatings.css";
 
 /**
  * Componente que muestra y gestiona las calificaciones pendientes del usuario
@@ -41,8 +41,12 @@ function PendingRatings() {
         if (hasRated) continue;
 
         // Obtener datos del otro usuario
-        const otherUserId = isSeller ? transaction.buyerId : transaction.sellerId;
-        const otherUser = conversation.participants_data?.find(p => p.id === otherUserId);
+        const otherUserId = isSeller
+          ? transaction.buyerId
+          : transaction.sellerId;
+        const otherUser = conversation.participants_data?.find(
+          (p) => p.id === otherUserId,
+        );
 
         if (!otherUser) continue;
 
@@ -54,12 +58,12 @@ function PendingRatings() {
           listing: {
             title: listing.name || "Artículo vendido",
             price: listing.price || 0,
-            images: listing.images || ["/images/placeholder.jpg"]
+            images: listing.images || ["/images/placeholder.jpg"],
           },
           fromUser: {
             id: user.id,
             name: user.name,
-            email: user.email
+            email: user.email,
           },
           toUser: {
             id: otherUser.id,
@@ -68,10 +72,10 @@ function PendingRatings() {
             avatar: otherUser.avatar,
             role: isSeller ? "buyer" : "seller",
             ratingAverage: 0, // TODO: obtener rating real
-            ratingCount: 0
+            ratingCount: 0,
           },
           transaction,
-          conversation
+          conversation,
         });
       }
 
@@ -161,8 +165,15 @@ function PendingRatings() {
                     className="pending-rating-user-avatar"
                   />
                   <div className="pending-rating-user-info">
-                    <p>Calificar a <strong>{rating.toUser.name}</strong></p>
-                    <small>como {rating.toUser.role === "seller" ? "vendedor" : "comprador"}</small>
+                    <p>
+                      Calificar a <strong>{rating.toUser.name}</strong>
+                    </p>
+                    <small>
+                      como{" "}
+                      {rating.toUser.role === "seller"
+                        ? "vendedor"
+                        : "comprador"}
+                    </small>
                   </div>
                 </div>
               </div>

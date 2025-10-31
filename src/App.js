@@ -16,13 +16,41 @@ import Header from "./components/Header/Header";
 import BottomNav from "./components/BottomNav/BottomNav";
 import { useData } from "./context/DataContext";
 import LoadingPage from "./pages/LoadingPage";
-import "./styles/theme.css";
-import "./styles/animations.css";
 
 // Context Providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { DataProvider } from "./context/DataContext";
 import { MessageProvider } from "./context/MessageContext";
+
+import "./styles/theme.css";
+import "./styles/animations.css";
+
+// Indicador visual de versión nativa (solo en web)
+const NativeVersionIndicator = () => {
+  // No mostrar el indicador si estamos en Capacitor (APK)
+  if (typeof window !== "undefined" && window.Capacitor) {
+    return null;
+  }
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: '10px',
+      right: '10px',
+      background: 'linear-gradient(45deg, #1089c6, #00d4ff)',
+      color: 'white',
+      padding: '4px 8px',
+      borderRadius: '12px',
+      fontSize: '10px',
+      fontWeight: 'bold',
+      zIndex: 9999,
+      boxShadow: '0 2px 8px rgba(16, 137, 198, 0.3)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    }}>
+      NATIVA v2.0
+    </div>
+  );
+};
 
 // Lazy loaded pages
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -207,6 +235,7 @@ function Shell() {
   return (
     <>
       <Header showNav={isDesktop} />
+      <NativeVersionIndicator />
       <div className={isDesktop ? "desktop-container" : ""}>
         <Suspense fallback={<LoadingPage />}>
           <AnimatedRoutes />

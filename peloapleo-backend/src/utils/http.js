@@ -14,9 +14,12 @@ export function applyCors(req, res) {
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   } else {
     // Permitir cualquier origen si no hay header origin (apps móviles)
     res.setHeader("Access-Control-Allow-Origin", "*");
+    // No se puede usar credentials con wildcard origin
+    res.setHeader("Access-Control-Allow-Credentials", "false");
   }
 
   res.setHeader(
@@ -27,7 +30,6 @@ export function applyCors(req, res) {
     "Access-Control-Allow-Methods",
     "GET, POST, PATCH, PUT, DELETE, OPTIONS",
   );
-  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("X-Powered-By", SERVER_NAME);
 }
 

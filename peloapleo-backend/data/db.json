@@ -849,11 +849,11 @@
       "expiresAt": "2025-11-08T01:53:32.772Z"
     },
     {
-      "id": "sess_d8a6549bd18244ae",
-      "token": "TAcSNQSeUv-p1QXvISxYRaMTyHR7H90v2IKpdcVrlRU",
-      "userId": "usr_ana_demo",
-      "createdAt": "2025-11-01T03:10:34.277Z",
-      "expiresAt": "2025-11-08T03:10:34.277Z"
+      "id": "sess_54e92ba6d30c43bd",
+      "token": "cegDkLqJQTZaGFQuhV7r-y2mDYqtohhK1Y_-hm6uZG0",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-11-01T13:06:40.218Z",
+      "expiresAt": "2025-11-08T13:06:40.217Z"
     }
   ],
   "auditLogs": [

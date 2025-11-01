@@ -10,7 +10,7 @@ import React, {
 import { apiRequest } from "../services/api";
 import { realtime } from "../services/realtime";
 import { LS } from "../utils/constants";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithRedirect, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 
 const AuthCtx = createContext(null);
@@ -30,6 +30,8 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(LS.token));
   const [user, setUser] = useState(() => readStoredUser());
   const [loading, setLoading] = useState(() => Boolean(token) && !user);
+  const [pendingGoogleAuth, setPendingGoogleAuth] = useState(false);
+  const [googleRegistrationData, setGoogleRegistrationData] = useState(null);
   const initRequested = useRef(false);
 
   const persistSession = useCallback((nextUser, nextToken) => {
@@ -125,6 +127,35 @@ export function AuthProvider({ children }) {
     };
   }, [user, refresh]);
 
+  // Manejar auth state changes para Google OAuth redirect
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser && pendingGoogleAuth) {
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          // Enviar el token de Firebase al backend
+          const response = await apiRequest("/auth/google", {
+            method: "POST",
+            data: { idToken },
+          });
+
+          // Si requiere registro completo, guardar datos para completar
+          if (response.requiresRegistration) {
+            setGoogleRegistrationData(response.googleData);
+          } else {
+            persistSession(response.user, response.token);
+          }
+        } catch (error) {
+          console.error("Error procesando Google auth:", error);
+        } finally {
+          setPendingGoogleAuth(false);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [pendingGoogleAuth, persistSession]);
+
   const login = useCallback(
     async ({ identifier, password }) => {
       try {
@@ -146,67 +177,45 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = useCallback(async () => {
     try {
+      setPendingGoogleAuth(true);
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: "select_account",
       });
 
-      const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
-
-      // Enviar el token de Firebase al backend
-      const response = await apiRequest("/auth/google", {
-        method: "POST",
-        data: { idToken },
-      });
-
-      persistSession(response.user, response.token);
-      return { success: true, user: response.user };
+      await signInWithRedirect(auth, provider);
+      // El manejo se hará en el listener de onAuthStateChanged
+      return { success: true };
     } catch (error) {
       console.error("Error en login con Google:", error);
+      setPendingGoogleAuth(false);
       return {
         success: false,
         error: error?.message || "No se pudo iniciar sesión con Google.",
       };
     }
-  }, [persistSession]);
+  }, []);
 
   const registerWithGoogle = useCallback(async () => {
     try {
+      setPendingGoogleAuth(true);
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: "select_account",
       });
 
-      const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
-
-      // Enviar el token de Firebase al backend
-      const response = await apiRequest("/auth/google", {
-        method: "POST",
-        data: { idToken },
-      });
-
-      // Si requiere registro completo, devolver los datos de Google
-      if (response.requiresRegistration) {
-        return {
-          success: true,
-          requiresRegistration: true,
-          googleData: response.googleData,
-        };
-      }
-
-      // Usuario existente - persistir sesión
-      persistSession(response.user, response.token);
-      return { success: true, user: response.user };
+      await signInWithRedirect(auth, provider);
+      // El manejo se hará en el listener de onAuthStateChanged
+      return { success: true };
     } catch (error) {
       console.error("Error en registro con Google:", error);
+      setPendingGoogleAuth(false);
       return {
         success: false,
         error: error?.message || "No se pudo registrarse con Google.",
       };
     }
-  }, [persistSession]);
+  }, []);
 
   const completeGoogleRegistration = useCallback(
     async (googleData, additionalData) => {
@@ -220,6 +229,7 @@ export function AuthProvider({ children }) {
         });
 
         persistSession(response.user, response.token);
+        setGoogleRegistrationData(null);
         return { success: true, user: response.user };
       } catch (error) {
         console.error("Error completando registro con Google:", error);
@@ -273,6 +283,7 @@ export function AuthProvider({ children }) {
       user,
       token,
       loading,
+      googleRegistrationData,
       login,
       loginWithGoogle,
       register,
@@ -285,6 +296,7 @@ export function AuthProvider({ children }) {
       user,
       token,
       loading,
+      googleRegistrationData,
       login,
       loginWithGoogle,
       register,

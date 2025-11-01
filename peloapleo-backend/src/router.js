@@ -244,6 +244,11 @@ const routes = [
     pattern: /^\/api\/admin\/reputations$/,
     handler: adminController.reputations,
   },
+  {
+    method: "GET",
+    pattern: /^\/api\/admin\/raw$/,
+    handler: adminController.raw,
+  },
 
   // Rutas de verificación de identidad
   {

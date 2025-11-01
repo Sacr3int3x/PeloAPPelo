@@ -13,10 +13,10 @@ import {
   fetchAdminOverview,
   fetchAdminRaw,
   fetchAdminUsers,
-  updateAdminListing,
   updateAdminUser,
+  deleteAdminListing,
+  pauseAdminListing,
 } from "../services/adminApi";
-import { fetchAdminReputations } from "../services/transactions";
 import "../styles/AdminDashboard.css";
 
 const tabs = [
@@ -24,8 +24,8 @@ const tabs = [
   { id: "listings", label: "Publicaciones" },
   { id: "users", label: "Usuarios" },
   { id: "conversations", label: "Conversaciones" },
+  { id: "notifications", label: "Notificaciones" },
   { id: "verifications", label: "Verificaciones" },
-  { id: "reputations", label: "Reputaciones" },
   { id: "audit", label: "Auditoría" },
   { id: "raw", label: "Datos crudos" },
 ];
@@ -36,12 +36,6 @@ const statusOptions = [
   { value: "sold", label: "Vendida" },
   { value: "suspended", label: "Suspendida" },
   { value: "removed", label: "Removida" },
-];
-
-const planOptions = [
-  { value: "premium", label: "Premium" },
-  { value: "plus", label: "Plus" },
-  { value: "gratis", label: "Gratis" },
 ];
 
 const roleOptions = [
@@ -200,10 +194,6 @@ function AdminDashboard() {
 
   const [listingFilters, setListingFilters] = useState({
     q: "",
-    status: "",
-    category: "",
-    plan: "",
-    location: "",
     owner: "",
     page: 0,
     pageSize: 10,
@@ -211,7 +201,6 @@ function AdminDashboard() {
   const [listingsData, setListingsData] = useState({ list: [], total: 0 });
   const [listingsLoading, setListingsLoading] = useState(false);
   const [listingsError, setListingsError] = useState("");
-  const [editingListing, setEditingListing] = useState(null);
 
   const {
     state: conversationsData,
@@ -224,15 +213,6 @@ function AdminDashboard() {
     page: 0,
     pageSize: 10,
   });
-
-  const [reputationFilters, setReputationFilters] = useState({
-    q: "",
-    page: 0,
-    pageSize: 10,
-  });
-  const [reputationData, setReputationData] = useState({ list: [], total: 0 });
-  const [reputationLoading, setReputationLoading] = useState(false);
-  const [reputationError, setReputationError] = useState("");
 
   const {
     state: auditData,
@@ -255,6 +235,23 @@ function AdminDashboard() {
   });
   const [verificationLoading, setVerificationLoading] = useState(false);
   const [verificationError, setVerificationError] = useState("");
+
+  const [notificationFilters, setNotificationFilters] = useState({
+    page: 0,
+    pageSize: 10,
+  });
+  const [notificationData, setNotificationData] = useState({
+    list: [],
+    total: 0,
+  });
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState("");
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [newNotification, setNewNotification] = useState({
+    title: "",
+    message: "",
+    actionUrl: "",
+  });
 
   const [imageModal, setImageModal] = useState({
     isOpen: false,
@@ -300,10 +297,6 @@ function AdminDashboard() {
 
   const {
     q: listingQ,
-    status: listingStatus,
-    category: listingCategory,
-    plan: listingPlan,
-    location: listingLocation,
     owner: listingOwner,
     page: listingPage,
     pageSize: listingPageSize,
@@ -316,10 +309,6 @@ function AdminDashboard() {
     try {
       const response = await fetchAdminListings(token, {
         q: listingQ,
-        status: listingStatus,
-        category: listingCategory,
-        plan: listingPlan,
-        location: listingLocation,
         owner: listingOwner,
         limit: listingPageSize,
         offset: listingPage * listingPageSize,
@@ -335,17 +324,7 @@ function AdminDashboard() {
     } finally {
       setListingsLoading(false);
     }
-  }, [
-    token,
-    listingQ,
-    listingStatus,
-    listingCategory,
-    listingPlan,
-    listingLocation,
-    listingOwner,
-    listingPage,
-    listingPageSize,
-  ]);
+  }, [token, listingQ, listingOwner, listingPage, listingPageSize]);
 
   const {
     q: conversationsQ,
@@ -369,38 +348,6 @@ function AdminDashboard() {
     conversationsPageSize,
     execConversations,
   ]);
-
-  const {
-    q: reputationsQ,
-    page: reputationsPage,
-    pageSize: reputationsPageSize,
-  } = reputationFilters;
-
-  const loadReputations = useCallback(async () => {
-    if (!token) return;
-    setReputationLoading(true);
-    setReputationError("");
-    try {
-      const response = await fetchAdminReputations(
-        {
-          q: reputationsQ,
-          limit: reputationsPageSize,
-          offset: reputationsPage * reputationsPageSize,
-        },
-        token,
-      );
-      setReputationData({
-        list: response.reputations || [],
-        total: response.total || 0,
-      });
-    } catch (error) {
-      setReputationError(
-        error?.message || "No se pudieron cargar las reputaciones.",
-      );
-    } finally {
-      setReputationLoading(false);
-    }
-  }, [token, reputationsQ, reputationsPage, reputationsPageSize]);
 
   const { page: auditPage, pageSize: auditPageSize } = auditFilters;
 
@@ -460,6 +407,59 @@ function AdminDashboard() {
       setVerificationLoading(false);
     }
   }, [token, verificationFilters.status]);
+
+  const loadNotifications = useCallback(async () => {
+    if (!token) return;
+    setNotificationLoading(true);
+    setNotificationError("");
+    try {
+      const response = await fetch(`/api/admin/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Error al cargar notificaciones");
+      const data = await response.json();
+      setNotificationData({
+        list: data.notifications || [],
+        total: data.notifications?.length || 0,
+      });
+    } catch (error) {
+      setNotificationError(error.message);
+    } finally {
+      setNotificationLoading(false);
+    }
+  }, [token]);
+
+  const sendNotification = async () => {
+    if (!token || !newNotification.title || !newNotification.message) return;
+
+    setSendingNotification(true);
+    try {
+      const response = await fetch(`/api/admin/notifications`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: newNotification.title,
+          message: newNotification.message,
+          actionUrl: newNotification.actionUrl || null,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Error al enviar notificación");
+
+      toast.success("Notificación enviada exitosamente a todos los usuarios");
+      setNewNotification({ title: "", message: "", actionUrl: "" });
+      loadNotifications(); // Recargar la lista
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSendingNotification(false);
+    }
+  };
 
   const handleVerificationAction = async (verificationId, action) => {
     try {
@@ -529,12 +529,6 @@ function AdminDashboard() {
   }, [tab, isAdmin, token, loadConversations]);
 
   useEffect(() => {
-    if (isAdmin && token && tab === "reputations") {
-      loadReputations();
-    }
-  }, [tab, isAdmin, token, loadReputations]);
-
-  useEffect(() => {
     if (isAdmin && token && tab === "audit") {
       loadAudit();
     }
@@ -552,6 +546,12 @@ function AdminDashboard() {
       loadVerifications();
     }
   }, [tab, isAdmin, token, loadVerifications]);
+
+  useEffect(() => {
+    if (isAdmin && token && tab === "notifications") {
+      loadNotifications();
+    }
+  }, [tab, isAdmin, token, loadNotifications]);
 
   const overviewTotals = overview?.totals || {};
 
@@ -595,41 +595,50 @@ function AdminDashboard() {
     }
   };
 
-  const handleListingEdit = (listing) => {
-    setEditingListing({
-      id: listing.id,
-      status: listing.status || "active",
-      plan: listing.plan || "gratis",
-      moderationNotes: listing.moderationNotes || "",
-    });
+  const handleDeleteListing = async (listingId, listingName) => {
+    if (
+      !window.confirm(
+        `¿Estás seguro de que quieres eliminar la publicación "${listingName}"? Esta acción no se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteAdminListing(token, listingId);
+      setListingsData((prev) => ({
+        ...prev,
+        list: prev.list.filter((item) => item.id !== listingId),
+        total: prev.total - 1,
+      }));
+      toast.success("Publicación eliminada exitosamente");
+    } catch (error) {
+      setListingsError(error?.message || "No se pudo eliminar la publicación.");
+      toast.error(error?.message || "Error al eliminar la publicación");
+    }
   };
 
-  const cancelListingEdit = () => setEditingListing(null);
+  const handlePauseListing = async (listingId, listingName) => {
+    if (
+      !window.confirm(
+        `¿Estás seguro de que quieres pausar la publicación "${listingName}"?`,
+      )
+    ) {
+      return;
+    }
 
-  const saveListingEdit = async () => {
-    if (!editingListing || !token) return;
     try {
-      const payload = {
-        status: editingListing.status,
-        plan: editingListing.plan,
-        moderationNotes: editingListing.moderationNotes,
-      };
-      const response = await updateAdminListing(
-        token,
-        editingListing.id,
-        payload,
-      );
+      await pauseAdminListing(token, listingId);
       setListingsData((prev) => ({
         ...prev,
         list: prev.list.map((item) =>
-          item.id === editingListing.id ? { ...item, ...response.item } : item,
+          item.id === listingId ? { ...item, status: "paused" } : item,
         ),
       }));
-      cancelListingEdit();
+      toast.success("Publicación pausada exitosamente");
     } catch (error) {
-      setListingsError(
-        error?.message || "No se pudo actualizar la publicación.",
-      );
+      setListingsError(error?.message || "No se pudo pausar la publicación.");
+      toast.error(error?.message || "Error al pausar la publicación");
     }
   };
 
@@ -816,7 +825,15 @@ function AdminDashboard() {
               const isEditing = editingUser?.id === item.id;
               return (
                 <tr key={item.id}>
-                  <td>{item.email}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => navigate(`/admin/user/${item.id}`)}
+                    >
+                      {item.email}
+                    </button>
+                  </td>
                   <td>{item.username}</td>
                   <td>
                     {isEditing ? (
@@ -950,62 +967,15 @@ function AdminDashboard() {
       >
         <input
           className="input"
-          placeholder="Buscar por título, descripción o owner"
+          placeholder="Buscar por título"
           value={listingFilters.q}
           onChange={(event) =>
             setListingFilters((prev) => ({ ...prev, q: event.target.value }))
           }
         />
-        <select
-          className="input"
-          value={listingFilters.status}
-          onChange={(event) =>
-            setListingFilters((prev) => ({
-              ...prev,
-              status: event.target.value,
-            }))
-          }
-        >
-          <option value="">Todos los estados</option>
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
         <input
           className="input"
-          placeholder="Categoría"
-          value={listingFilters.category}
-          onChange={(event) =>
-            setListingFilters((prev) => ({
-              ...prev,
-              category: event.target.value,
-            }))
-          }
-        />
-        <input
-          className="input"
-          placeholder="Plan"
-          value={listingFilters.plan}
-          onChange={(event) =>
-            setListingFilters((prev) => ({ ...prev, plan: event.target.value }))
-          }
-        />
-        <input
-          className="input"
-          placeholder="Ubicación"
-          value={listingFilters.location}
-          onChange={(event) =>
-            setListingFilters((prev) => ({
-              ...prev,
-              location: event.target.value,
-            }))
-          }
-        />
-        <input
-          className="input"
-          placeholder="Propietario (email)"
+          placeholder="Buscar por email del propietario"
           value={listingFilters.owner}
           onChange={(event) =>
             setListingFilters((prev) => ({
@@ -1015,7 +985,7 @@ function AdminDashboard() {
           }
         />
         <button type="submit" className="btn primary">
-          Aplicar filtros
+          Buscar
         </button>
       </form>
 
@@ -1026,116 +996,53 @@ function AdminDashboard() {
           <thead>
             <tr>
               <th>Título</th>
-              <th>Categoría</th>
-              <th>Precio</th>
+              <th>Usuario</th>
               <th>Estado</th>
-              <th>Plan</th>
-              <th>Owner</th>
-              <th>Actualización</th>
-              <th />
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {listingsData.list.map((item) => {
-              const isEditing = editingListing?.id === item.id;
-              return (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
-                  <td>{item.category}</td>
-                  <td>{item.price?.toLocaleString?.() || item.price}</td>
-                  <td>
-                    {isEditing ? (
-                      <div className="admin-inline-control">
-                        <Select
-                          name={`listing-status-${item.id}`}
-                          value={editingListing.status}
-                          onChange={(val) =>
-                            setEditingListing((prev) => ({
-                              ...prev,
-                              status: val,
-                            }))
-                          }
-                          options={statusOptions}
-                          className="select-inline"
-                        />
-                      </div>
-                    ) : (
-                      <span className={`admin-chip status-${item.status}`}>
-                        {item.status}
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <div className="admin-inline-control">
-                        <Select
-                          name={`listing-plan-${item.id}`}
-                          value={editingListing.plan}
-                          onChange={(val) =>
-                            setEditingListing((prev) => ({
-                              ...prev,
-                              plan: val,
-                            }))
-                          }
-                          options={planOptions}
-                          className="select-inline"
-                        />
-                      </div>
-                    ) : (
-                      item.plan || "—"
-                    )}
-                  </td>
-                  <td>{item.ownerEmail}</td>
-                  <td>
-                    {item.updatedAt
-                      ? new Date(item.updatedAt).toLocaleString()
-                      : "—"}
-                  </td>
-                  <td className="admin-actions">
-                    {isEditing ? (
-                      <div className="admin-edit-stack">
-                        <textarea
-                          className="input"
-                          rows={2}
-                          placeholder="Notas internas"
-                          value={editingListing.moderationNotes}
-                          onChange={(event) =>
-                            setEditingListing((prev) => ({
-                              ...prev,
-                              moderationNotes: event.target.value,
-                            }))
-                          }
-                        />
-                        <div className="admin-edit-actions">
-                          <button
-                            type="button"
-                            className="btn primary sm"
-                            onClick={saveListingEdit}
-                          >
-                            Guardar
-                          </button>
-                          <button
-                            type="button"
-                            className="btn outline sm"
-                            onClick={cancelListingEdit}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn outline sm"
-                        onClick={() => handleListingEdit(item)}
-                      >
-                        Moderar
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            {listingsData.list.map((item) => (
+              <tr key={item.id}>
+                <td>{item.name}</td>
+                <td>
+                  {item.ownerUsername || item.ownerName || item.ownerEmail}
+                </td>
+                <td>
+                  <span className={`admin-chip status-${item.status}`}>
+                    {item.status === "active"
+                      ? "Activa"
+                      : item.status === "paused"
+                        ? "Pausada"
+                        : item.status === "sold"
+                          ? "Vendida"
+                          : item.status === "suspended"
+                            ? "Suspendida"
+                            : item.status === "removed"
+                              ? "Removida"
+                              : item.status}
+                  </span>
+                </td>
+                <td className="admin-actions">
+                  {item.status === "active" && (
+                    <button
+                      type="button"
+                      className="btn warning sm"
+                      onClick={() => handlePauseListing(item.id, item.name)}
+                    >
+                      Pausar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn danger sm"
+                    onClick={() => handleDeleteListing(item.id, item.name)}
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -1249,93 +1156,6 @@ function AdminDashboard() {
         {conversationsLoading && (
           <p className="muted">Cargando conversaciones…</p>
         )}
-      </section>
-    );
-  };
-
-  const renderReputations = () => {
-    const page = reputationFilters.page;
-    const pageSize = reputationFilters.pageSize;
-    return (
-      <section className="admin-section">
-        <form
-          className="admin-filters"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setReputationFilters((prev) => ({ ...prev, page: 0 }));
-            loadReputations();
-          }}
-        >
-          <input
-            className="input"
-            placeholder="Buscar por usuario, comentario o publicación"
-            value={reputationFilters.q}
-            onChange={(event) =>
-              setReputationFilters((prev) => ({
-                ...prev,
-                q: event.target.value,
-              }))
-            }
-          />
-          <button type="submit" className="btn outline">
-            Filtrar
-          </button>
-        </form>
-
-        {reputationError && (
-          <div className="admin-error">{reputationError}</div>
-        )}
-
-        <div className="admin-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Calificación</th>
-                <th>Comentario</th>
-                <th>De</th>
-                <th>Para</th>
-                <th>Publicación</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reputationData.list.map((rep) => (
-                <tr key={rep.id}>
-                  <td>{new Date(rep.createdAt).toLocaleString()}</td>
-                  <td>{rep.rating}</td>
-                  <td>{rep.comment || "—"}</td>
-                  <td>
-                    {rep.fromUser?.email ||
-                      rep.fromUser?.name ||
-                      rep.fromUser?.id}
-                  </td>
-                  <td>
-                    {rep.toUser?.email || rep.toUser?.name || rep.toUser?.id}
-                  </td>
-                  <td>{rep.listingName || rep.listingId || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <Pagination
-          page={page}
-          total={reputationData.total || 0}
-          pageSize={pageSize}
-          onPageChange={(nextPage) =>
-            setReputationFilters((prev) => ({ ...prev, page: nextPage }))
-          }
-          onPageSizeChange={(size) =>
-            setReputationFilters((prev) => ({
-              ...prev,
-              pageSize: size,
-              page: 0,
-            }))
-          }
-        />
-
-        {reputationLoading && <p className="muted">Cargando reputaciones…</p>}
       </section>
     );
   };
@@ -1564,6 +1384,136 @@ function AdminDashboard() {
     </section>
   );
 
+  const renderNotifications = () => (
+    <section className="admin-section">
+      <div className="admin-notification-form">
+        <h3>Enviar nueva notificación</h3>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            sendNotification();
+          }}
+        >
+          <div className="form-group">
+            <label htmlFor="notification-title">Título *</label>
+            <input
+              id="notification-title"
+              type="text"
+              className="input"
+              value={newNotification.title}
+              onChange={(event) =>
+                setNewNotification((prev) => ({
+                  ...prev,
+                  title: event.target.value,
+                }))
+              }
+              placeholder="Título de la notificación"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="notification-message">Mensaje *</label>
+            <textarea
+              id="notification-message"
+              className="input"
+              rows={4}
+              value={newNotification.message}
+              onChange={(event) =>
+                setNewNotification((prev) => ({
+                  ...prev,
+                  message: event.target.value,
+                }))
+              }
+              placeholder="Contenido de la notificación"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="notification-url">URL de acción (opcional)</label>
+            <input
+              id="notification-url"
+              type="url"
+              className="input"
+              value={newNotification.actionUrl}
+              onChange={(event) =>
+                setNewNotification((prev) => ({
+                  ...prev,
+                  actionUrl: event.target.value,
+                }))
+              }
+              placeholder="https://..."
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn primary"
+            disabled={
+              sendingNotification ||
+              !newNotification.title ||
+              !newNotification.message
+            }
+          >
+            {sendingNotification
+              ? "Enviando..."
+              : "Enviar a todos los usuarios"}
+          </button>
+        </form>
+      </div>
+
+      <div className="admin-notification-list">
+        <h3>Notificaciones enviadas</h3>
+        {notificationError && (
+          <div className="admin-error">{notificationError}</div>
+        )}
+
+        <div className="admin-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Mensaje</th>
+                <th>URL de acción</th>
+                <th>Fecha de envío</th>
+                <th>Usuarios que la vieron</th>
+              </tr>
+            </thead>
+            <tbody>
+              {notificationData.list.map((notification) => (
+                <tr key={notification.id}>
+                  <td>{notification.title}</td>
+                  <td>{notification.message}</td>
+                  <td>
+                    {notification.actionUrl ? (
+                      <a
+                        href={notification.actionUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-link"
+                      >
+                        Ver enlace
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>{new Date(notification.createdAt).toLocaleString()}</td>
+                  <td>{notification.readBy?.length || 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {notificationLoading && (
+          <p className="muted">Cargando notificaciones…</p>
+        )}
+        {!notificationLoading && notificationData.list.length === 0 && (
+          <p className="muted">No se han enviado notificaciones aún.</p>
+        )}
+      </div>
+    </section>
+  );
+
   return (
     <main className="container page admin-page">
       <div className="category-header-bar" style={{ marginBottom: 24 }}>
@@ -1613,7 +1563,7 @@ function AdminDashboard() {
       {tab === "users" && renderUsers()}
       {tab === "listings" && renderListings()}
       {tab === "conversations" && renderConversations()}
-      {tab === "reputations" && renderReputations()}
+      {tab === "notifications" && renderNotifications()}
       {tab === "audit" && renderAudit()}
       {tab === "raw" && renderRaw()}
       {tab === "verifications" && renderVerifications()}

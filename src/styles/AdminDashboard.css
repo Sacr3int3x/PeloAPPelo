@@ -687,3 +687,42 @@
     right: 10px;
   }
 }
+
+.admin-notification-form {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.admin-notification-form h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.admin-notification-form .form-group {
+  margin-bottom: 16px;
+}
+
+.admin-notification-form label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.admin-notification-form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.admin-notification-list h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}

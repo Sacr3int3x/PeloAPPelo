@@ -1,57 +1,65 @@
-import React, { useState, useEffect } from "react";
-import { FiX, FiStar, FiCheck, FiUser } from "react-icons/fi";
+import React, { useState, useEffect, useCallback } from "react";
+import { FiX, FiCheck, FiUser } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { useMessages } from "../../context/MessageContext";
 import { createTransaction } from "../../services/transactions";
-import { getConversationParticipants } from "../../services/messages";
 import "./MarcarComoVendidoModal.css";
 
 const MarcarComoVendidoModal = ({ listing, isOpen, onClose, onSuccess }) => {
   const { token, user } = useAuth();
+  const { conversations } = useMessages();
   const [buyers, setBuyers] = useState([]);
   const [selectedBuyer, setSelectedBuyer] = useState(null);
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [step, setStep] = useState(1); // 1: Seleccionar comprador, 2: Calificar
 
-  useEffect(() => {
-    if (isOpen && listing) {
-      fetchBuyers();
-    }
-  }, [isOpen, listing]);
-
-  const fetchBuyers = async () => {
+  const fetchBuyers = useCallback(() => {
+    if (!listing?.id || !conversations) return;
     try {
       setLoading(true);
-      const participants = await getConversationParticipants(listing.id, token);
-      // Filtrar solo usuarios que no son el vendedor
-      const potentialBuyers = participants.filter(p => p.id !== user.id);
-      setBuyers(potentialBuyers);
+      // Filtrar conversaciones que tienen el listingId
+      const relevantConversations = conversations.filter(
+        (conv) => conv.listingId === listing.id,
+      );
+      const participants = [];
+      const seen = new Set();
+      relevantConversations.forEach((conv) => {
+        conv.participants_data.forEach((p) => {
+          if (!seen.has(p.email) && p.id !== user.id) {
+            seen.add(p.email);
+            participants.push(p);
+          }
+        });
+      });
+      setBuyers(participants);
       setLoading(false);
     } catch (error) {
       console.error("Error al obtener compradores:", error);
       setError("No se pudieron cargar los compradores");
       setLoading(false);
     }
-  };
+  }, [listing?.id, conversations, user.id]);
+
+  useEffect(() => {
+    if (isOpen && listing) {
+      fetchBuyers();
+    }
+  }, [isOpen, listing, fetchBuyers]);
 
   const handleBuyerSelect = (buyer) => {
     setSelectedBuyer(buyer);
-    setStep(2);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!selectedBuyer) {
-      setError("Selecciona un comprador");
+
+    if (!listing?.id) {
+      setError("No se pudo identificar la publicación");
       return;
     }
 
-    if (rating === 0) {
-      setError("Por favor califica al comprador");
+    if (!selectedBuyer) {
+      setError("Selecciona un comprador");
       return;
     }
 
@@ -59,12 +67,13 @@ const MarcarComoVendidoModal = ({ listing, isOpen, onClose, onSuccess }) => {
     setError("");
 
     try {
-      await createTransaction({
-        listingId: listing.id,
-        buyerId: selectedBuyer.id,
-        rating,
-        comment,
-      }, token);
+      await createTransaction(
+        {
+          listingId: listing.id,
+          buyerId: selectedBuyer.id,
+        },
+        token,
+      );
 
       onSuccess?.();
       handleClose();
@@ -77,144 +86,80 @@ const MarcarComoVendidoModal = ({ listing, isOpen, onClose, onSuccess }) => {
 
   const handleClose = () => {
     setSelectedBuyer(null);
-    setRating(0);
-    setHoverRating(0);
-    setComment("");
     setError("");
-    setStep(1);
     setBuyers([]);
     onClose();
   };
 
-  const handleBack = () => {
-    setStep(1);
-    setRating(0);
-    setComment("");
-    setError("");
-  };
-
-  if (!isOpen) return null;
+  if (!isOpen || !listing) return null;
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content marcar-vendido-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-content marcar-vendido-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h2>{step === 1 ? "Seleccionar Comprador" : "Calificar Comprador"}</h2>
+          <h2>Seleccionar Comprador</h2>
           <button className="modal-close-btn" onClick={handleClose}>
             <FiX />
           </button>
         </div>
 
         <div className="modal-body">
-          {step === 1 ? (
-            <>
-              <div className="listing-info">
-                <img src={listing.images?.[0]} alt={listing.title} />
-                <div>
-                  <h3>{listing.title}</h3>
-                  <p className="price">${listing.price?.toLocaleString()}</p>
-                </div>
-              </div>
+          <div className="listing-info">
+            <img src={listing.images?.[0]} alt={listing.title} />
+            <div>
+              <h3>{listing.title}</h3>
+              <p className="price">${listing.price?.toLocaleString()}</p>
+            </div>
+          </div>
 
-              <div className="buyer-selection">
-                <p className="instruction">¿A quién le vendiste este producto?</p>
-                
-                {loading ? (
-                  <div className="loading-state">
-                    <div className="spinner"></div>
-                    <p>Cargando compradores...</p>
-                  </div>
-                ) : buyers.length === 0 ? (
-                  <div className="empty-state">
-                    <FiUser />
-                    <p>No hay compradores disponibles</p>
-                    <small>Asegúrate de tener conversaciones sobre este producto</small>
-                  </div>
-                ) : (
-                  <div className="buyer-list">
-                    {buyers.map((buyer) => (
-                      <div
-                        key={buyer.id}
-                        className="buyer-item"
-                        onClick={() => handleBuyerSelect(buyer)}
+          <div className="buyer-selection">
+            <p className="instruction">¿A quién le vendiste este producto?</p>
+
+            {loading ? (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Cargando compradores...</p>
+              </div>
+            ) : buyers.length === 0 ? (
+              <div className="empty-state">
+                <FiUser />
+                <p>No hay compradores disponibles</p>
+                <small>
+                  Asegúrate de tener conversaciones sobre este producto
+                </small>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div className="buyer-list">
+                  {buyers.map((buyer) => (
+                    <div key={buyer.id} className="buyer-item">
+                      <input
+                        type="radio"
+                        id={`buyer-${buyer.id}`}
+                        name="buyer"
+                        value={buyer.id}
+                        checked={selectedBuyer?.id === buyer.id}
+                        onChange={() => handleBuyerSelect(buyer)}
+                        className="buyer-radio"
+                      />
+                      <label
+                        htmlFor={`buyer-${buyer.id}`}
+                        className="buyer-label"
                       >
-                        <img 
-                          src={buyer.avatar || "/images/avatars/default.png"} 
+                        <img
+                          src={buyer.avatar || "/images/avatars/default.png"}
                           alt={buyer.name}
                           className="buyer-avatar"
                         />
                         <div className="buyer-info">
                           <h4>{buyer.name}</h4>
-                          {buyer.ratingAverage > 0 && (
-                            <div className="buyer-rating">
-                              <FiStar className="star-filled" />
-                              <span>{buyer.ratingAverage.toFixed(1)}</span>
-                              <span className="rating-count">({buyer.ratingCount})</span>
-                            </div>
-                          )}
                         </div>
-                        <FiCheck className="select-icon" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="selected-buyer-info">
-                <img 
-                  src={selectedBuyer.avatar || "/images/avatars/default.png"} 
-                  alt={selectedBuyer.name}
-                  className="buyer-avatar-large"
-                />
-                <div>
-                  <h3>{selectedBuyer.name}</h3>
-                  <p className="subtitle">Compraste: {listing.title}</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="rating-form">
-                <div className="form-group">
-                  <label>¿Cómo fue tu experiencia con este comprador?</label>
-                  <div className="star-rating">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        className={`star ${
-                          star <= (hoverRating || rating) ? "filled" : ""
-                        }`}
-                        onMouseEnter={() => setHoverRating(star)}
-                        onMouseLeave={() => setHoverRating(0)}
-                        onClick={() => setRating(star)}
-                      >
-                        <FiStar />
-                      </button>
-                    ))}
-                  </div>
-                  {rating > 0 && (
-                    <p className="rating-text">
-                      {rating === 1 && "Muy mala"}
-                      {rating === 2 && "Mala"}
-                      {rating === 3 && "Regular"}
-                      {rating === 4 && "Buena"}
-                      {rating === 5 && "Excelente"}
-                    </p>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="comment">Comentario (opcional)</label>
-                  <textarea
-                    id="comment"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Cuéntanos sobre tu experiencia..."
-                    rows="4"
-                    maxLength="500"
-                  />
-                  <small className="char-count">{comment.length}/500</small>
+                      </label>
+                    </div>
+                  ))}
                 </div>
 
                 {error && <div className="error-message">{error}</div>}
@@ -223,15 +168,15 @@ const MarcarComoVendidoModal = ({ listing, isOpen, onClose, onSuccess }) => {
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={handleBack}
+                    onClick={handleClose}
                     disabled={loading}
                   >
-                    Volver
+                    Cancelar
                   </button>
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={loading || rating === 0}
+                    disabled={loading || !selectedBuyer}
                   >
                     {loading ? (
                       <>
@@ -247,8 +192,8 @@ const MarcarComoVendidoModal = ({ listing, isOpen, onClose, onSuccess }) => {
                   </button>
                 </div>
               </form>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

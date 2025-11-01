@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaGoogle, FaFacebookF, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaGoogle, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import { CATALOG } from "../utils/constants";
 import Select from "../components/Select/Select";
@@ -19,7 +19,13 @@ function passwordScore(password) {
 }
 
 function RegisterPage() {
-  const { register: registerUser, user, refresh } = useAuth();
+  const {
+    register: registerUser,
+    registerWithGoogle,
+    completeGoogleRegistration,
+    user,
+    refresh,
+  } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const params = new URLSearchParams(loc.search);
@@ -42,6 +48,11 @@ function RegisterPage() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Estado para registro con Google
+  const [googleData, setGoogleData] = useState(null);
+  const [isCompletingGoogleRegistration, setIsCompletingGoogleRegistration] =
+    useState(false);
+
   const locationOptions = useMemo(() => {
     const set = new Set();
     Object.values(CATALOG).forEach((cat) => {
@@ -53,42 +64,88 @@ function RegisterPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!fullName.trim() || !username.trim()) {
-      setError("Indica tu nombre completo y un usuario.");
-      return;
+
+    if (isCompletingGoogleRegistration) {
+      // Completar registro con Google
+      if (!username.trim() || !location) {
+        setError("Nombre de usuario y ubicación son requeridos.");
+        return;
+      }
+
+      setSubmitting(true);
+      const result = await completeGoogleRegistration(googleData, {
+        username,
+        location,
+        phone,
+      });
+      setSubmitting(false);
+
+      if (!result?.success) {
+        setError(result?.error || "No se pudo completar el registro.");
+        return;
+      }
+      nav(next);
+    } else {
+      // Registro normal
+      if (!fullName.trim() || !username.trim()) {
+        setError("Indica tu nombre completo y un usuario.");
+        return;
+      }
+      if (!email.trim() || !location) {
+        setError("Completa todos los campos requeridos.");
+        return;
+      }
+      if (password.length < 8) {
+        setError("La clave debe tener al menos 8 caracteres.");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Las claves no coinciden.");
+        return;
+      }
+      if (!acceptTerms) {
+        setError("Debes aceptar los términos para continuar.");
+        return;
+      }
+      setSubmitting(true);
+      await refresh(); // Refresca la sesión antes de registrar
+      const result = await registerUser({
+        email,
+        password,
+        name: fullName,
+        location,
+        username,
+        phone,
+      });
+      setSubmitting(false);
+      if (!result?.success) {
+        setError(result?.error || "No se pudo crear la cuenta.");
+        return;
+      }
+      nav(next);
     }
-    if (!email.trim() || !location) {
-      setError("Completa todos los campos requeridos.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("La clave debe tener al menos 8 caracteres.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Las claves no coinciden.");
-      return;
-    }
-    if (!acceptTerms) {
-      setError("Debes aceptar los términos para continuar.");
-      return;
-    }
-    setSubmitting(true);
-    await refresh(); // Refresca la sesión antes de registrar
-    const result = await registerUser({
-      email,
-      password,
-      name: fullName,
-      location,
-      username,
-      phone,
-    });
-    setSubmitting(false);
+  };
+
+  const handleGoogleRegister = async () => {
+    setError("");
+    const result = await registerWithGoogle();
+
     if (!result?.success) {
-      setError(result?.error || "No se pudo crear la cuenta.");
+      setError(result?.error || "No se pudo registrarse con Google.");
       return;
     }
-    nav(next);
+
+    if (result.requiresRegistration) {
+      // Usuario nuevo - guardar datos de Google y mostrar formulario
+      setGoogleData(result.googleData);
+      setIsCompletingGoogleRegistration(true);
+      // Pre-llenar campos con datos de Google
+      setFullName(result.googleData.name || "");
+      setEmail(result.googleData.email || "");
+    } else {
+      // Usuario existente - redirigir
+      nav(next);
+    }
   };
 
   const score = password ? passwordScore(password) : 0;
@@ -97,26 +154,36 @@ function RegisterPage() {
     <main className="container page auth-page">
       <div className="auth-card">
         <header className="auth-header">
-          <h1 className="auth-title">Crea tu cuenta</h1>
+          <h1 className="auth-title">
+            {isCompletingGoogleRegistration
+              ? "Completa tu registro"
+              : "Crea tu cuenta"}
+          </h1>
           <p className="auth-subtitle">
-            Crea tu cuenta para comenzar a intercambiar.
+            {isCompletingGoogleRegistration
+              ? "Solo necesitamos algunos datos más para completar tu cuenta"
+              : "Crea tu cuenta para comenzar a intercambiar."}
           </p>
         </header>
 
-        <div className="auth-social">
-          <button type="button" className="btn outline sm auth-social-btn">
-            <FaGoogle aria-hidden />
-            Continuar con Google
-          </button>
-          <button type="button" className="btn outline sm auth-social-btn">
-            <FaFacebookF aria-hidden />
-            Continuar con Facebook
-          </button>
-        </div>
+        {!isCompletingGoogleRegistration && (
+          <>
+            <div className="auth-social">
+              <button
+                type="button"
+                className="btn outline sm auth-social-btn"
+                onClick={handleGoogleRegister}
+              >
+                <FaGoogle aria-hidden />
+                Continuar con Google
+              </button>
+            </div>
 
-        <div className="auth-divider">
-          <span>o completa el formulario</span>
-        </div>
+            <div className="auth-divider">
+              <span>o completa el formulario</span>
+            </div>
+          </>
+        )}
 
         <form onSubmit={onSubmit} className="auth-form">
           <div className="auth-field">
@@ -129,7 +196,7 @@ function RegisterPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Ingresa tu nombre y apellido"
-              required
+              required={!isCompletingGoogleRegistration}
             />
           </div>
 
@@ -162,6 +229,7 @@ function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="correo@ejemplo.com"
               required
+              readOnly={isCompletingGoogleRegistration}
             />
           </div>
 
@@ -193,103 +261,111 @@ function RegisterPage() {
             className="auth-select"
           />
 
-          <div className="auth-field">
-            <label className="auth-label" htmlFor="register-password">
-              Clave
-            </label>
-            <div className="auth-input-wrapper">
-              <input
-                id="register-password"
-                className="input auth-input"
-                type={passwordVisible ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Ingresa tu clave"
-                minLength={8}
-                required
-              />
-              <button
-                type="button"
-                className="auth-input-append"
-                onClick={() => setPasswordVisible((v) => !v)}
-                aria-label={passwordVisible ? "Ocultar clave" : "Mostrar clave"}
-              >
-                {passwordVisible ? (
-                  <FaEyeSlash aria-hidden />
-                ) : (
-                  <FaEye aria-hidden />
+          {!isCompletingGoogleRegistration && (
+            <>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="register-password">
+                  Clave
+                </label>
+                <div className="auth-input-wrapper">
+                  <input
+                    id="register-password"
+                    className="input auth-input"
+                    type={passwordVisible ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Ingresa tu clave"
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="auth-input-append"
+                    onClick={() => setPasswordVisible((v) => !v)}
+                    aria-label={
+                      passwordVisible ? "Ocultar clave" : "Mostrar clave"
+                    }
+                  >
+                    {passwordVisible ? (
+                      <FaEyeSlash aria-hidden />
+                    ) : (
+                      <FaEye aria-hidden />
+                    )}
+                  </button>
+                </div>
+                {password && (
+                  <div
+                    className={`auth-password-meter score-${score}`}
+                    aria-live="polite"
+                  >
+                    <span className="auth-password-indicator" />
+                    <span className="auth-password-label">
+                      {strengthLabels[score]}
+                    </span>
+                  </div>
                 )}
-              </button>
-            </div>
-            {password && (
-              <div
-                className={`auth-password-meter score-${score}`}
-                aria-live="polite"
-              >
-                <span className="auth-password-indicator" />
-                <span className="auth-password-label">
-                  {strengthLabels[score]}
-                </span>
               </div>
-            )}
-          </div>
 
-          <div className="auth-field">
-            <label className="auth-label" htmlFor="register-confirm">
-              Confirmar clave
-            </label>
-            <div className="auth-input-wrapper">
-              <input
-                id="register-confirm"
-                className="input auth-input"
-                type={confirmVisible ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirma tu clave"
-                minLength={8}
-                required
-              />
-              <button
-                type="button"
-                className="auth-input-append"
-                onClick={() => setConfirmVisible((v) => !v)}
-                aria-label={
-                  confirmVisible
-                    ? "Ocultar confirmación"
-                    : "Mostrar confirmación"
-                }
-              >
-                {confirmVisible ? (
-                  <FaEyeSlash aria-hidden />
-                ) : (
-                  <FaEye aria-hidden />
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="register-confirm">
+                  Confirmar clave
+                </label>
+                <div className="auth-input-wrapper">
+                  <input
+                    id="register-confirm"
+                    className="input auth-input"
+                    type={confirmVisible ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirma tu clave"
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="auth-input-append"
+                    onClick={() => setConfirmVisible((v) => !v)}
+                    aria-label={
+                      confirmVisible
+                        ? "Ocultar confirmación"
+                        : "Mostrar confirmación"
+                    }
+                  >
+                    {confirmVisible ? (
+                      <FaEyeSlash aria-hidden />
+                    ) : (
+                      <FaEye aria-hidden />
+                    )}
+                  </button>
+                </div>
+                {confirmPassword && confirmPassword !== password && (
+                  <span className="field-error">
+                    Las claves deben coincidir.
+                  </span>
                 )}
-              </button>
-            </div>
-            {confirmPassword && confirmPassword !== password && (
-              <span className="field-error">Las claves deben coincidir.</span>
-            )}
-          </div>
+              </div>
 
-          <label className="auth-terms">
-            <input
-              type="checkbox"
-              checked={acceptTerms}
-              onChange={(e) => setAcceptTerms(e.target.checked)}
-              required
-            />
-            <span>
-              Acepto los{" "}
-              <button type="button" className="auth-link">
-                Términos de servicio
-              </button>{" "}
-              y la{" "}
-              <button type="button" className="auth-link">
-                Política de privacidad
-              </button>
-              .
-            </span>
-          </label>
+              <label className="auth-terms">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  required
+                />
+                <span>
+                  Acepto los{" "}
+                  <button type="button" className="auth-link">
+                    Términos de servicio
+                  </button>{" "}
+                  y la{" "}
+                  <button type="button" className="auth-link">
+                    Política de privacidad
+                  </button>
+                  .
+                </span>
+              </label>
+            </>
+          )}
 
           {error && (
             <div className="field-error" role="alert">
@@ -302,7 +378,13 @@ function RegisterPage() {
             type="submit"
             disabled={submitting}
           >
-            {submitting ? "Creando cuenta..." : "Crear cuenta"}
+            {submitting
+              ? isCompletingGoogleRegistration
+                ? "Completando registro..."
+                : "Creando cuenta..."
+              : isCompletingGoogleRegistration
+                ? "Completar registro"
+                : "Crear cuenta"}
           </button>
         </form>
 

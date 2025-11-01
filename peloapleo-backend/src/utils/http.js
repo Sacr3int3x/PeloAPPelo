@@ -23,6 +23,10 @@ export function applyCors(req, res) {
   );
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("X-Powered-By", SERVER_NAME);
+
+  // Headers para Firebase Authentication (popups)
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 }
 
 export function sendJson(res, statusCode, payload, extraHeaders = {}) {

@@ -44,7 +44,9 @@ export async function list({ req, res, query }) {
   sendJson(res, 200, { items });
 }
 
-export async function detail({ res, params }) {
+export async function detail({ req, res, params }) {
+  const token = extractToken(req);
+  const currentUser = await getUserFromToken(token);
   const [id] = params;
   const listing = await getListingById(id);
   if (!listing) {
@@ -52,6 +54,16 @@ export async function detail({ res, params }) {
     error.statusCode = 404;
     throw error;
   }
+
+  // Si la publicación está pausada (vendida), solo el propietario puede verla
+  if (listing.status === "paused") {
+    if (!currentUser || listing.ownerId !== currentUser.id) {
+      const error = new Error("Esta publicación ya no está disponible.");
+      error.statusCode = 404;
+      throw error;
+    }
+  }
+
   sendJson(res, 200, { item: listing });
 }
 

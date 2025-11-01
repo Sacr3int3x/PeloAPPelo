@@ -102,12 +102,12 @@ function Hero() {
   useEffect(() => {
     const rail = scrollerRef.current;
     if (!rail) return;
-    let frame = null;
+    let scrollTimer = null;
 
     const handleScroll = () => {
       if (programmaticRef.current) return;
-      if (frame) cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
         const children = Array.from(rail.children);
         if (!children.length) return;
         const scrollLeft = rail.scrollLeft;
@@ -124,13 +124,13 @@ function Hero() {
           smoothRef.current = false;
           setVirtualIndex(nearestIndex);
         }
-      });
+      }, 150); // debounce 150ms
     };
 
     rail.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       rail.removeEventListener("scroll", handleScroll);
-      if (frame) cancelAnimationFrame(frame);
+      if (scrollTimer) clearTimeout(scrollTimer);
     };
   }, [virtualIndex]);
 

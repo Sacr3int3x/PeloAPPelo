@@ -415,6 +415,82 @@ export async function updateUser({ req, res, params }) {
   sendJson(res, 200, { user: updatedUser });
 }
 
+export async function deleteUser({ req, res, params }) {
+  const token = extractToken(req);
+  const admin = await requireUser(token);
+  ensureAdmin(admin);
+  const [userId] = params;
+
+  // No permitir que un admin se elimine a sí mismo
+  if (admin.id === userId) {
+    const error = new Error("No puedes eliminar tu propia cuenta.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  await withDb(async (db) => {
+    const userIndex = db.users.findIndex((user) => user.id === userId);
+    if (userIndex === -1) {
+      const error = new Error("Usuario no encontrado.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const user = db.users[userIndex];
+
+    // Eliminar todas las publicaciones del usuario
+    db.listings = (db.listings || []).filter(
+      (listing) => listing.ownerId !== userId,
+    );
+
+    // Eliminar todas las conversaciones donde el usuario es participante
+    db.conversations = (db.conversations || []).filter(
+      (conversation) => !conversation.participants.includes(userId),
+    );
+
+    // Eliminar todas las reputaciones del usuario (como emisor y receptor)
+    db.reputations = (db.reputations || []).filter(
+      (rep) => rep.fromUserId !== userId && rep.toUserId !== userId,
+    );
+
+    // Eliminar todas las sesiones del usuario
+    db.sessions = (db.sessions || []).filter(
+      (session) => session.userId !== userId,
+    );
+
+    // Eliminar todas las transacciones del usuario
+    if (db.transactions) {
+      db.transactions = db.transactions.filter(
+        (transaction) =>
+          transaction.fromUserId !== userId && transaction.toUserId !== userId,
+      );
+    }
+
+    // Eliminar todas las notificaciones del usuario
+    if (db.notifications && Array.isArray(db.notifications)) {
+      db.notifications = db.notifications.filter(
+        (notification) => notification.userId !== userId,
+      );
+    }
+
+    // Finalmente eliminar al usuario
+    db.users.splice(userIndex, 1);
+
+    await recordAudit({
+      userId: admin.id,
+      action: "user.delete",
+      targetType: "user",
+      targetId: userId,
+      details: { deletedUser: user.email },
+    });
+  });
+
+  sendJson(res, 200, {
+    success: true,
+    message: "Usuario eliminado exitosamente",
+  });
+}
+
 export async function updateListing({ req, res, params }) {
   const token = extractToken(req);
   const admin = await requireUser(token);
@@ -433,6 +509,88 @@ export async function updateListing({ req, res, params }) {
     targetType: "listing",
     targetId: listingId,
     details: body,
+  });
+
+  sendJson(res, 200, { item: result });
+}
+
+export async function deleteListing({ req, res, params }) {
+  const token = extractToken(req);
+  const admin = await requireUser(token);
+  ensureAdmin(admin);
+  const [listingId] = params;
+
+  await withDb(async (db) => {
+    const listingIndex = db.listings.findIndex(
+      (listing) => listing.id === listingId,
+    );
+    if (listingIndex === -1) {
+      const error = new Error("Publicación no encontrada.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const listing = db.listings[listingIndex];
+
+    // Eliminar todas las conversaciones relacionadas con esta publicación
+    db.conversations = (db.conversations || []).filter(
+      (conversation) => conversation.listingId !== listingId,
+    );
+
+    // Eliminar todas las reputaciones relacionadas con esta publicación
+    db.reputations = (db.reputations || []).filter(
+      (rep) => rep.listingId !== listingId,
+    );
+
+    // Eliminar todas las transacciones relacionadas con esta publicación
+    if (db.transactions) {
+      db.transactions = db.transactions.filter(
+        (transaction) => transaction.listingId !== listingId,
+      );
+    }
+
+    // Eliminar todas las notificaciones relacionadas con esta publicación
+    if (db.notifications) {
+      db.notifications = db.notifications.filter(
+        (notification) => notification.listingId !== listingId,
+      );
+    }
+
+    // Finalmente eliminar la publicación
+    db.listings.splice(listingIndex, 1);
+
+    await recordAudit({
+      userId: admin.id,
+      action: "listing.delete",
+      targetType: "listing",
+      targetId: listingId,
+      details: { deletedListing: listing.name, ownerId: listing.ownerId },
+    });
+  });
+
+  sendJson(res, 200, {
+    success: true,
+    message: "Publicación eliminada exitosamente",
+  });
+}
+
+export async function pauseListing({ req, res, params }) {
+  const token = extractToken(req);
+  const admin = await requireUser(token);
+  ensureAdmin(admin);
+  const [listingId] = params;
+
+  const result = await adminUpdateListing({
+    listingId,
+    updates: { status: "paused" },
+  });
+
+  await recordAudit({
+    userId: admin.id,
+    action: "listing.pause",
+    targetType: "listing",
+    targetId: listingId,
+    details: { pausedListing: result.name, ownerId: result.ownerId },
   });
 
   sendJson(res, 200, { item: result });

@@ -17,7 +17,7 @@ const allowedConditions = new Set(["nuevo", "usado"]);
 
 function ratingSummaryForOwner(ownerId, db) {
   const reputations =
-    db.reputations?.filter((rep) => rep.toUserId === ownerId) || [];
+    db.ratings?.filter((rep) => rep.toUserId === ownerId) || [];
   if (!reputations.length) {
     return { average: 0, count: 0 };
   }
@@ -25,14 +25,15 @@ function ratingSummaryForOwner(ownerId, db) {
     (sum, rep) => sum + Number(rep.rating || 0),
     0,
   );
-  const average = Number((total / reputations.length).toFixed(2));
+  const average = total / reputations.length;
+  const roundedAverage = Math.round(average * 10) / 10;
   const lastReview =
     reputations
       .map((rep) => new Date(rep.createdAt || 0).getTime())
       .filter((time) => Number.isFinite(time))
       .sort((a, b) => b - a)[0] || null;
   return {
-    average,
+    average: roundedAverage,
     count: reputations.length,
     lastReviewAt: lastReview ? new Date(lastReview).toISOString() : null,
   };
@@ -120,6 +121,7 @@ export async function listListings({ filters = {}, sort = "new" }) {
     "suspended",
     "sold",
     "finalizado",
+    "paused",
   ]);
   const visible =
     filters.includeModerated || filters.includeOwn

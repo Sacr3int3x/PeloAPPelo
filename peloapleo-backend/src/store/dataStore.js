@@ -20,6 +20,7 @@ const defaultData = {
   auditLogs: [],
   transactions: [],
   reputations: [],
+  adminNotifications: [], // Notificaciones enviadas por el administrador
 };
 
 let loaded = false;
@@ -33,7 +34,11 @@ async function ensureDataFile() {
   await ensureDir(MESSAGE_UPLOADS_DIR);
   const exists = fs.existsSync(DB_PATH);
   if (!exists) {
-    await fsPromises.writeFile(DB_PATH, JSON.stringify(defaultData, null, 2), "utf8");
+    await fsPromises.writeFile(
+      DB_PATH,
+      JSON.stringify(defaultData, null, 2),
+      "utf8",
+    );
     logInfo("Archivo de base de datos creado", { path: DB_PATH });
   }
 }
@@ -51,7 +56,10 @@ async function loadDb() {
     loaded = true;
     return dbCache;
   } catch (error) {
-    logError("No se pudo cargar la base de datos, usando valores por defecto", error);
+    logError(
+      "No se pudo cargar la base de datos, usando valores por defecto",
+      error,
+    );
     dbCache = structuredClone(defaultData);
     loaded = true;
     return dbCache;

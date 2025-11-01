@@ -7,10 +7,7 @@ import React, {
   useState,
 } from "react";
 import { apiRequest, buildImageUrl } from "../services/api";
-import {
-  completeConversation as apiCompleteConversation,
-  submitReputation as apiSubmitReputation,
-} from "../services/transactions";
+import { completeConversation as apiCompleteConversation } from "../services/transactions";
 import { useAuth } from "./AuthContext";
 import { realtime } from "../services/realtime";
 
@@ -636,27 +633,6 @@ export function MessageProvider({ children }) {
     [token, user],
   );
 
-  const submitReputation = useCallback(
-    async ({ transactionId, rating, comment, conversationId }) => {
-      if (!token || !user) {
-        return { success: false, error: "Debes iniciar sesión." };
-      }
-      try {
-        await apiSubmitReputation({ transactionId, rating, comment }, token);
-        if (conversationId) {
-          await fetchConversations();
-        }
-        return { success: true };
-      } catch (error) {
-        return {
-          success: false,
-          error: error?.message || "No se pudo registrar la reputación.",
-        };
-      }
-    },
-    [token, user, fetchConversations],
-  );
-
   const blockParticipant = useCallback(
     async (owner, target) => {
       if (!token || !user) return;
@@ -745,7 +721,6 @@ export function MessageProvider({ children }) {
         Boolean(blocked?.[ownerEmail]?.includes(targetEmail)),
       refresh: fetchConversations,
       completeConversation,
-      submitReputation,
       setConversations,
       markConversationAsRead,
     }),
@@ -761,7 +736,6 @@ export function MessageProvider({ children }) {
       unreadCount,
       fetchConversations,
       completeConversation,
-      submitReputation,
       setConversations,
       markConversationAsRead,
     ],

@@ -161,11 +161,15 @@ export async function approveVerification(userId, adminId) {
     await saveDb();
 
     // Emitir evento de cambio de verificación
-    emitEvent("verification.status.changed", {
-      userId,
-      newStatus: "approved",
-      changedAt: now,
-    }, { userIds: [userId] });
+    emitEvent(
+      "verification.status.changed",
+      {
+        userId,
+        newStatus: "approved",
+        changedAt: now,
+      },
+      { userIds: [userId] },
+    );
 
     return {
       success: true,
@@ -226,11 +230,15 @@ export async function rejectVerification(userId, adminId, reason) {
     await saveDb();
 
     // Emitir evento de cambio de verificación
-    emitEvent("verification.status.changed", {
-      userId,
-      newStatus: "rejected",
-      changedAt: now,
-    }, { userIds: [userId] });
+    emitEvent(
+      "verification.status.changed",
+      {
+        userId,
+        newStatus: "rejected",
+        changedAt: now,
+      },
+      { userIds: [userId] },
+    );
 
     return {
       success: true,
@@ -257,7 +265,10 @@ export async function getPendingVerifications() {
 export async function getAllVerifications() {
   const db = await getDb();
   return db.users
-    .filter((user) => user.verificationStatus && user.verificationStatus !== "unverified")
+    .filter(
+      (user) =>
+        user.verificationStatus && user.verificationStatus !== "unverified",
+    )
     .map((user) => ({
       id: user.id,
       name: user.name,
@@ -312,11 +323,15 @@ export async function resetVerification(userId, adminId) {
     await saveDb();
 
     // Emitir evento de cambio de verificación
-    emitEvent("verification.status.changed", {
-      userId,
-      newStatus: "unverified",
-      changedAt: now,
-    }, { userIds: [userId] });
+    emitEvent(
+      "verification.status.changed",
+      {
+        userId,
+        newStatus: "unverified",
+        changedAt: now,
+      },
+      { userIds: [userId] },
+    );
 
     return {
       success: true,

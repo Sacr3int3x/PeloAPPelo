@@ -51,10 +51,11 @@
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 2000;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border: 1px solid #e5e7eb;
 }
 
 .notification-header {
@@ -251,9 +252,15 @@
 
 @media (max-width: 480px) {
   .notification-dropdown {
-    width: calc(100vw - 40px);
+    width: calc(100vw - 32px);
     left: 50%;
     right: auto;
     transform: translateX(-50%);
+    max-height: 60vh;
+    top: calc(100% + 8px);
+  }
+
+  .notification-list {
+    max-height: 50vh;
   }
 }

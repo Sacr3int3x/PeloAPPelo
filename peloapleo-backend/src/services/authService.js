@@ -276,67 +276,130 @@ initializeFirebaseAdmin();
 
 export async function authenticateWithGoogle(idToken) {
   try {
-    // Verificar que Firebase Admin esté inicializado
-    if (!admin.apps.length) {
-      throw new Error(
-        "Firebase Admin no está configurado. Verifica las credenciales en el archivo .env",
-      );
-    }
-
     // Verificar el token de Firebase
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const { uid, email, name, picture } = decodedToken;
+    const {
+      uid: firebaseUid,
+      email,
+      name,
+      picture: avatar,
+      email_verified: emailVerified,
+    } = decodedToken;
 
-    return withDb(async (db) => {
-      // Buscar usuario existente por email o Firebase UID
-      let user = db.users.find(
-        (u) => u.email === email || u.firebaseUid === uid,
-      );
+    // Buscar usuario existente
+    const db = await getDb();
+    const existingUser = db.users.find(
+      (u) => u.firebaseUid === firebaseUid || u.email === email,
+    );
 
-      if (!user) {
-        // Crear nuevo usuario con datos de Google
-        const userId = prefixedId("usr");
-        const now = new Date().toISOString();
-
-        user = {
-          id: userId,
-          firebaseUid: uid,
-          email: email,
-          name: name || email.split("@")[0],
-          avatar: picture,
-          emailVerified: true,
-          createdAt: now,
-          updatedAt: now,
-          lastLoginAt: now,
-          // Campos de verificación de identidad
-          verificationStatus: "unverified",
-          identityDocuments: null,
-          verificationRequestedAt: null,
-          verificationCompletedAt: null,
-        };
-
-        db.users.push(user);
-        await saveDb();
-      } else {
-        // Actualizar último login
-        user.lastLoginAt = new Date().toISOString();
-        await saveDb();
-      }
-
-      // Crear sesión
-      const session = await createSession(user.id);
+    if (existingUser) {
+      // Usuario existente - crear sesión
+      const session = await createSession(existingUser.id);
       return {
-        user: sanitizeUser(user),
+        success: true,
+        requiresRegistration: false,
+        user: sanitizeUser(existingUser),
         token: session.token,
         expiresAt: session.expiresAt,
       };
-    });
+    } else {
+      // Usuario nuevo - devolver datos para completar registro
+      return {
+        success: true,
+        requiresRegistration: true,
+        googleData: {
+          firebaseUid,
+          email,
+          name,
+          avatar,
+          emailVerified,
+        },
+      };
+    }
   } catch (error) {
     console.error("Error authenticating with Google:", error);
-    const authError = new Error(
-      "No se pudo autenticar con Google: " + error.message,
-    );
-    authError.statusCode = 401;
-    throw authError;
+    return {
+      success: false,
+      error: "Error al autenticar con Google",
+    };
   }
+}
+export async function completeGoogleRegistration(googleData, additionalData) {
+  const { firebaseUid, email, name, avatar, emailVerified } = googleData;
+  const { username, location, phone } = additionalData;
+
+  return withDb(async (db) => {
+    // Verificar si ya existe un usuario con este firebaseUid
+    const existingFirebaseUser = db.users.find(
+      (u) => u.firebaseUid === firebaseUid,
+    );
+    if (existingFirebaseUser) {
+      // Usuario ya completó el registro con Google, hacer login
+      const session = await createSession(existingFirebaseUser.id);
+      return {
+        user: sanitizeUser(existingFirebaseUser),
+        token: session.token,
+        expiresAt: session.expiresAt,
+      };
+    }
+
+    // Verificar si existe un usuario con el mismo email pero sin firebaseUid
+    const existingEmailUser = db.users.find(
+      (u) => u.email === email && !u.firebaseUid,
+    );
+    if (existingEmailUser) {
+      // Usuario existe con email/password, pero está intentando registrarse con Google
+      // Podríamos permitir fusionar las cuentas o requerir login con email/password
+      const error = new Error(
+        "Ya existe una cuenta con este email. Por favor inicia sesión con tu email y contraseña, o usa un email diferente para Google.",
+      );
+      error.statusCode = 409;
+      throw error;
+    }
+
+    // Verificar si el username ya está en uso
+    const existingUsernameUser = db.users.find((u) => u.username === username);
+    if (existingUsernameUser) {
+      const error = new Error(
+        "Ese nombre de usuario ya está en uso. Por favor elige otro.",
+      );
+      error.statusCode = 409;
+      throw error;
+    }
+
+    // Crear nuevo usuario con datos de Google + datos adicionales
+    const userId = prefixedId("usr");
+    const now = new Date().toISOString();
+
+    const user = {
+      id: userId,
+      firebaseUid: firebaseUid,
+      email: email,
+      name: name,
+      username: username,
+      location: location,
+      phone: phone || null,
+      avatar: avatar,
+      emailVerified: emailVerified,
+      createdAt: now,
+      updatedAt: now,
+      lastLoginAt: now,
+      // Campos de verificación de identidad
+      verificationStatus: "unverified",
+      identityDocuments: null,
+      verificationRequestedAt: null,
+      verificationCompletedAt: null,
+    };
+
+    db.users.push(user);
+    await saveDb();
+
+    // Crear sesión
+    const session = await createSession(user.id);
+    return {
+      user: sanitizeUser(user),
+      token: session.token,
+      expiresAt: session.expiresAt,
+    };
+  });
 }

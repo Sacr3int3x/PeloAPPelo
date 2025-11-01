@@ -2,7 +2,9 @@ import { apiRequest } from "./api";
 
 const toQueryString = (params = {}) => {
   const entries = Object.entries(params)
-    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    )
     .map(([key, value]) => {
       if (typeof value === "number") return [key, value];
       return [key, String(value)];
@@ -37,6 +39,20 @@ export function updateAdminListing(token, listingId, payload) {
     method: "PATCH",
     token,
     data: payload,
+  });
+}
+
+export function deleteAdminListing(token, listingId) {
+  return apiRequest(`/admin/listings/${listingId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+export function pauseAdminListing(token, listingId) {
+  return apiRequest(`/admin/listings/${listingId}/pause`, {
+    method: "POST",
+    token,
   });
 }
 

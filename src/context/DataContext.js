@@ -32,10 +32,6 @@ const withNormalizedImages = (item) => {
 // Hook para detectar si el usuario está en escritorio
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(() => {
-    // Si estamos en Capacitor (APK), siempre mostrar versión móvil
-    if (typeof window !== "undefined" && window.Capacitor) {
-      return false;
-    }
     if (typeof window === "undefined") return false;
     const ua = navigator.userAgent.toLowerCase();
     const isPC =
@@ -44,21 +40,13 @@ function useIsDesktop() {
       ua.includes("linux");
     return isPC || window.innerWidth >= 1024;
   });
-
   useEffect(() => {
-    // Si estamos en Capacitor, mantener siempre en modo móvil
-    if (typeof window !== "undefined" && window.Capacitor) {
-      setIsDesktop(false);
-      return;
-    }
-
     function handleResize() {
       setIsDesktop(window.innerWidth >= 1024);
     }
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
   return isDesktop;
 }
 
@@ -144,12 +132,35 @@ export function DataProvider({ children }) {
       });
     };
 
+    const handleReputationUpdate = (event) => {
+      const { userId, reputation } = event.detail || {};
+      if (!userId || !reputation) return;
+
+      // Actualizar la reputación en todos los listings del usuario
+      setItems((prev) =>
+        prev.map((item) => {
+          if (String(item.ownerId) === String(userId)) {
+            return {
+              ...item,
+              ownerRating: reputation,
+            };
+          }
+          return item;
+        }),
+      );
+    };
+
     const offCreate = realtime.on("listing.created", handleCreate);
     const offUpdate = realtime.on("listing.updated", handleUpdate);
+    const offReputationUpdate = realtime.on(
+      "user.reputation.updated",
+      handleReputationUpdate,
+    );
 
     return () => {
       offCreate();
       offUpdate();
+      offReputationUpdate();
     };
   }, []);
 
@@ -157,7 +168,7 @@ export function DataProvider({ children }) {
     return items.filter((item) => {
       const status = (item.status || "").toLowerCase();
       if (["removed", "suspended"].includes(status)) return false;
-      if (["sold", "finalizado", "finalized"].includes(status)) {
+      if (["sold", "finalizado", "finalized", "paused"].includes(status)) {
         if (!user) return false;
         const ownerId = String(item.ownerId || "").toLowerCase();
         const userId = String(user?.id || "").toLowerCase();

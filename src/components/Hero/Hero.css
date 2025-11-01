@@ -20,25 +20,21 @@
   min-width: 90%;
   scroll-snap-align: start;
   border-radius: var(--radius-lg);
-  padding: clamp(28px, 8vw, 40px);
-  border: 1px solid var(--color-border);
+  padding: clamp(20px, 5vw, 30px);
   background: var(--color-surface);
   display: flex;
   align-items: center;
-  box-shadow: var(--shadow-md);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+  box-shadow: var(--shadow-lg);
+  transition: box-shadow 0.3s ease;
 }
 
 .hero-box:hover {
-  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
 }
 
 @media (min-width: 768px) {
   .hero-box {
-    min-width: 70%;
+    min-width: 85%;
   }
 }
 
@@ -70,7 +66,7 @@
 }
 
 .hero-text {
-  color: var(--color-text-muted);
+  color: var(--color-text);
   max-width: 480px;
   margin: 0;
   font-size: clamp(1rem, 2.5vw, 1.25rem);

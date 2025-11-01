@@ -6,11 +6,12 @@ import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { fmt } from "../utils/format";
 import "./ProfilePage.css";
+import MarcarComoVendidoModal from "../components/MarcarComoVendidoModal/MarcarComoVendidoModal";
 
 const statusLabel = {
   active: "Activa",
   paused: "Pausada",
-  sold: "Finalizada",
+  sold: "Vendida",
   finalizado: "Finalizada",
 };
 
@@ -25,7 +26,7 @@ function ProfileListingsPage() {
   const data = useData();
   const navigate = useNavigate();
   const updateStatus = data?.updateStatus || (() => {});
-  const deleteListing = data?.deleteListing || (() => {});
+  const refreshListings = data?.refresh || (() => {});
 
   const listings = useMemo(() => {
     if (!user) return [];
@@ -34,6 +35,9 @@ function ProfileListingsPage() {
 
   const [feedback, setFeedback] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [showSoldModal, setShowSoldModal] = useState(false);
+  const [selectedListing, setSelectedListing] = useState(null);
 
   const filteredListings = useMemo(() => {
     return listings.filter(
@@ -60,10 +64,17 @@ function ProfileListingsPage() {
   });
 
   const handleStatusChange = async (listingId, nextStatus) => {
+    if (nextStatus === "sold") {
+      const listing = listings.find((l) => l.id === listingId);
+      if (listing) {
+        setSelectedListing(listing);
+        setShowSoldModal(true);
+      }
+      return;
+    }
     const promptMap = {
       active: "¿Deseas reactivar esta publicación?",
       paused: "¿Deseas pausar temporalmente esta publicación?",
-      sold: "¿Marcar como finalizada? No aparecerá más en las búsquedas.",
     };
     const message = promptMap[nextStatus] || "¿Confirmas esta acción?";
     setConfirmAction({
@@ -91,26 +102,6 @@ function ProfileListingsPage() {
       return;
     }
     navigate(`/publicar/${listing.id}`);
-  };
-
-  const handleDelete = async (listingId) => {
-    setConfirmAction({
-      show: true,
-      action: async () => {
-        const result = await deleteListing(listingId);
-        if (result?.success) {
-          setFeedback("Publicación eliminada correctamente.");
-        } else if (result?.error) {
-          setFeedback(result.error);
-        } else {
-          setFeedback("No se pudo eliminar la publicación.");
-        }
-        setConfirmAction({ show: false, action: null });
-      },
-      message:
-        "¿Estás seguro que deseas eliminar esta publicación? Esta acción no se puede deshacer.",
-      listingId,
-    });
   };
 
   if (!user) {
@@ -238,7 +229,7 @@ function ProfileListingsPage() {
                       Pausar
                     </button>
                   )}
-                  {!["sold", "finalizado", "finalized"].includes(
+                  {!["sold", "finalizado", "finalized", "paused"].includes(
                     listing.status,
                   ) && (
                     <button
@@ -249,15 +240,15 @@ function ProfileListingsPage() {
                       Finalizar
                     </button>
                   )}
-                  {["sold", "finalizado", "finalized"].includes(
+                  {["sold", "finalizado", "finalized", "paused"].includes(
                     listing.status,
                   ) && (
                     <button
                       type="button"
-                      className="status-btn danger"
-                      onClick={() => handleDelete(listing.id)}
+                      className="status-btn primary"
+                      onClick={() => handleStatusChange(listing.id, "active")}
                     >
-                      Eliminar
+                      Republicar
                     </button>
                   )}
                 </div>
@@ -268,6 +259,22 @@ function ProfileListingsPage() {
           <p className="muted">Aún no has publicado anuncios.</p>
         )}
       </section>
+
+      <MarcarComoVendidoModal
+        listing={selectedListing}
+        isOpen={showSoldModal}
+        onClose={() => {
+          setShowSoldModal(false);
+          setSelectedListing(null);
+        }}
+        onSuccess={() => {
+          setFeedback("Publicación marcada como vendida correctamente.");
+          setShowSoldModal(false);
+          setSelectedListing(null);
+          // Refrescar los datos para mostrar el nuevo estado
+          refreshListings();
+        }}
+      />
     </main>
   );
 }

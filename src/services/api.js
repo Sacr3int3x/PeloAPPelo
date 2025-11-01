@@ -2,12 +2,7 @@ const rawBase = process.env.REACT_APP_API_BASE?.trim();
 const DEFAULT_BASE =
   rawBase && rawBase.length ? rawBase.replace(/\/+$/, "") : "/api";
 
-// Si estamos en Capacitor (APK), usar el backend de Render
-const CAPACITOR_BASE = "https://peloappelobackend1.onrender.com/api";
-
-export const API_BASE = (typeof window !== "undefined" && window.Capacitor)
-  ? CAPACITOR_BASE
-  : DEFAULT_BASE;
+export const API_BASE = DEFAULT_BASE;
 
 function buildUrl(path) {
   if (/^https?:\/\//.test(path)) return path;
@@ -73,11 +68,5 @@ export function buildImageUrl(path) {
   if (!path) return "";
   if (/^https?:\/\//.test(path)) return path;
   if (path.startsWith("/images/")) return path;
-
-  // Si estamos en Capacitor, usar la URL completa de Render
-  if (typeof window !== "undefined" && window.Capacitor) {
-    return `https://peloappelobackend1.onrender.com${path.startsWith("/") ? path : `/${path}`}`;
-  }
-
   return `${API_BASE.replace(/\/api$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
 }

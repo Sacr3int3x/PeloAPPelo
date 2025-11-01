@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FiX, FiStar, FiCheck } from "react-icons/fi";
-import { submitReputation } from "../../services/transactions";
+import { rateUser } from "../../services/transactions";
 import { useAuth } from "../../context/AuthContext";
 import "./RatingModal.css";
 
@@ -24,21 +24,20 @@ const RatingModal = ({ pendingRating, isOpen, onClose, onSuccess }) => {
     setError("");
 
     try {
-      await submitReputation(
-        { transactionId: pendingRating.id, rating, comment },
+      await rateUser(
+        {
+          transactionId: pendingRating.transactionId,
+          toUserId: pendingRating.toUser.id,
+          rating,
+          comment,
+        },
         token,
       );
       onSuccess?.();
       handleClose();
     } catch (error) {
       console.error("Error al calificar:", error);
-      if (error.code === "VERIFICATION_REQUIRED") {
-        setError(
-          "Debes verificar tu identidad antes de calificar usuarios. Ve a tu perfil para completar la verificación.",
-        );
-      } else {
-        setError(error.response?.data?.error || "Error al enviar calificación");
-      }
+      setError(error.response?.data?.error || "Error al enviar calificación");
       setLoading(false);
     }
   };
@@ -53,7 +52,7 @@ const RatingModal = ({ pendingRating, isOpen, onClose, onSuccess }) => {
 
   if (!isOpen || !pendingRating) return null;
 
-  const { listing, fromUser, toUser } = pendingRating;
+  const { toUser, listing, role } = pendingRating;
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
@@ -62,9 +61,7 @@ const RatingModal = ({ pendingRating, isOpen, onClose, onSuccess }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h2>
-            Calificar {toUser.role === "seller" ? "Vendedor" : "Comprador"}
-          </h2>
+          <h2>Calificar {role === "seller" ? "Vendedor" : "Comprador"}</h2>
           <button className="modal-close-btn" onClick={handleClose}>
             <FiX />
           </button>
@@ -88,13 +85,9 @@ const RatingModal = ({ pendingRating, isOpen, onClose, onSuccess }) => {
               />
               <div className="user-info">
                 <h4>{toUser.name}</h4>
-                {toUser.ratingAverage > 0 && (
-                  <div className="user-rating">
-                    <FiStar className="star-filled" />
-                    <span>{toUser.ratingAverage.toFixed(1)}</span>
-                    <span className="rating-count">({toUser.ratingCount})</span>
-                  </div>
-                )}
+                <p className="user-role">
+                  {role === "seller" ? "Vendedor" : "Comprador"}
+                </p>
               </div>
             </div>
           </div>

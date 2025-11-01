@@ -76,8 +76,8 @@ const server = http.createServer(async (req, res) => {
     // Aplicar middlewares en orden
     applyCors(req, res);
 
-    // Rate limiting - 100 requests per minute
-    rateLimit({ windowMs: 60000, max: 100 })(req, res, () => {});
+    // Rate limiting - 500 requests per minute
+    rateLimit({ windowMs: 60000, max: 500 })(req, res, () => {});
 
     // Headers de seguridad
     securityHeaders(req, res, () => {});

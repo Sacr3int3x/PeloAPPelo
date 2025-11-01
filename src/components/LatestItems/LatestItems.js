@@ -10,8 +10,7 @@ import ErrorBoundary from "../ErrorBoundary/ErrorBoundary";
 const CONTAINER_STYLES = {
   width: "100%",
   maxWidth: "1200px",
-  margin: "0 auto",
-  padding: "0 1rem",
+  margin: "0 auto"
 };
 
 const mulberry32 = (seed) => {
@@ -69,10 +68,10 @@ function LatestItemsContent({ limit = 24, shuffleSeed = null }) {
   return (
     <section className="latest-items" style={CONTAINER_STYLES}>
       <h2 className="h2">Publicaciones recientes</h2>
-      <div className="latest-items-grid">
+      <div className="latest-items-list">
         {latest.map((item) => (
           <div key={item.id} className="latest-item-wrapper">
-            <Card item={item} />
+            <Card item={item} viewMode="list" delay={0} />
           </div>
         ))}
       </div>

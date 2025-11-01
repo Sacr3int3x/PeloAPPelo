@@ -1,6 +1,6 @@
 {
-  "short_name": "PeloAPPelo",
-  "name": "PeloAPPelo - Compra y Venta",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "logo192.png",
@@ -15,10 +15,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "orientation": "portrait",
   "theme_color": "#000000",
-  "background_color": "#ffffff",
-  "scope": "/",
-  "categories": ["shopping", "lifestyle"],
-  "lang": "es-ES"
+  "background_color": "#ffffff"
 }

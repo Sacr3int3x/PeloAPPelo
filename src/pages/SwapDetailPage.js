@@ -9,12 +9,14 @@ import {
 } from "react-icons/md";
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../context/MessageContext";
+import { useNotifications } from "../context/NotificationContext";
 import {
   fetchSwapProposals,
   acceptSwapProposal,
   rejectSwapProposal,
   cancelSwapProposal,
   deleteSwapProposal,
+  markSwapAsRead,
 } from "../services/transactions";
 import "./SwapDetailPage.css";
 
@@ -115,6 +117,7 @@ function SwapDetailPage() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const { refresh: refreshConversations } = useMessages();
+  const { refreshCounts } = useNotifications();
   const [proposal, setProposal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState({
@@ -143,6 +146,11 @@ function SwapDetailPage() {
         const found = response.proposals?.find((p) => p.id === id);
         if (found) {
           setProposal(found);
+          // Marcar como leída si no lo está
+          if (found.unread) {
+            await markSwapAsRead(id, token);
+            await refreshCounts();
+          }
         } else {
           navigate("/inbox");
         }
@@ -155,7 +163,7 @@ function SwapDetailPage() {
     };
 
     loadProposal();
-  }, [id, token, navigate]);
+  }, [id, token, navigate, refreshCounts]);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("es-ES", {
@@ -190,6 +198,7 @@ function SwapDetailPage() {
 
           // Refrescar las conversaciones para que aparezca la nueva
           await refreshConversations();
+          await refreshCounts();
 
           if (response.conversationId) {
             navigate(`/inbox?conversation=${response.conversationId}`);
@@ -217,6 +226,7 @@ function SwapDetailPage() {
 
       // Refrescar las conversaciones
       await refreshConversations();
+      await refreshCounts();
 
       if (response.conversationId) {
         navigate(`/inbox?conversation=${response.conversationId}`);
@@ -239,6 +249,7 @@ function SwapDetailPage() {
       onConfirm: async () => {
         try {
           await cancelSwapProposal(id, token);
+          await refreshCounts();
           navigate("/inbox");
         } catch (error) {
           console.error("Error al cancelar la propuesta:", error);
@@ -258,6 +269,7 @@ function SwapDetailPage() {
       onConfirm: async () => {
         try {
           await deleteSwapProposal(id, token);
+          await refreshCounts();
           navigate("/inbox");
         } catch (error) {
           console.error("Error al eliminar la propuesta:", error);

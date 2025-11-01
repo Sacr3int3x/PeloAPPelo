@@ -20,16 +20,17 @@ function ItemPage() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const item = byId(id);
-  if (!item) return <main className="container page">No encontrado.</main>;
-
-  const images = (
-    item.images?.length ? item.images : ["/images/placeholder.jpg"]
-  ).slice(0, 6);
-  const sellerEmail = item.ownerEmail || null;
+  const images = item
+    ? (item.images?.length ? item.images : ["/images/placeholder.jpg"]).slice(
+        0,
+        6,
+      )
+    : [];
+  const sellerEmail = item?.ownerEmail || null;
   const ownerListings = sellerEmail ? byOwner(sellerEmail) : [];
 
   // Manejo seguro de la reputación del vendedor
-  const ownerRating = item.ownerRating || {};
+  const ownerRating = item?.ownerRating || {};
   const ownerRatingAverage =
     typeof ownerRating.average === "number" ? ownerRating.average : 0;
   const ownerRatingCount =
@@ -37,19 +38,43 @@ function ItemPage() {
   const reputation = clamp(ownerRatingAverage, 0, 5);
 
   // Información del vendedor con valores por defecto seguros
-  const sellerName = item.ownerName || sellerEmail?.split("@")[0] || "Vendedor";
+  const sellerName =
+    item?.ownerName || sellerEmail?.split("@")[0] || "Vendedor";
   const sellerUsername =
-    item.ownerUsername || sellerEmail?.split("@")[0] || "vendedor";
+    item?.ownerUsername || sellerEmail?.split("@")[0] || "vendedor";
 
   // Manejo de la URL del avatar
   const defaultAvatar = "/images/avatars/default.svg";
-  const sellerAvatar = item.ownerAvatar || defaultAvatar;
-  const isFavorite = isFav(item.id);
+  const sellerAvatar = item?.ownerAvatar || defaultAvatar;
+  const isFavorite = item ? isFav(item.id) : false;
   const isOwner =
     user?.email && sellerEmail
       ? user.email.toLowerCase() === sellerEmail.toLowerCase()
       : false;
   const isVerified = user?.verificationStatus === "approved";
+  const publishedDate = item.createdAt ? new Date(item.createdAt) : null;
+
+  if (!item) return <main className="container page">No encontrado.</main>;
+
+  // Si la publicación está pausada (vendida) y el usuario no es el propietario, mostrar mensaje
+  if (item.status === "paused" && !isOwner) {
+    return (
+      <main className="container page">
+        <div className="panel" style={{ textAlign: "center", padding: "2rem" }}>
+          <h2>Publicación no disponible</h2>
+          <p>Esta publicación ya no está disponible para ver o contactar.</p>
+          <button
+            className="btn primary"
+            onClick={() => nav("/")}
+            style={{ marginTop: "1rem" }}
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   const planLabel = {
     premium: "Destacado Premium",
     plus: "Destacado Plus",
@@ -62,7 +87,6 @@ function ItemPage() {
   };
   const conditionLabel =
     (item.condition || "usado").toLowerCase() === "nuevo" ? "Nuevo" : "Usado";
-  const publishedDate = item.createdAt ? new Date(item.createdAt) : null;
 
   return (
     <main className="container page item-page">
@@ -238,11 +262,20 @@ function ItemPage() {
             </div>
             <div className="seller-reputation">
               <Rating value={reputation} votes={ownerRatingCount} />
-              <span className="seller-reviews">
+              <button
+                type="button"
+                className="seller-reviews-link"
+                onClick={() => {
+                  if (item.ownerId) {
+                    nav(`/user/${item.ownerId}/reputation`);
+                  }
+                }}
+                disabled={!item.ownerId}
+              >
                 {ownerRatingCount === 1
                   ? "1 reseña"
                   : `${ownerRatingCount} reseñas`}
-              </span>
+              </button>
             </div>
           </div>
           <div className="seller-actions">
@@ -340,7 +373,7 @@ function ItemPage() {
                 }
               }
             }}
-            disabled={isOwner || !isVerified}
+            disabled={isOwner || !isVerified || item.status === "paused"}
             aria-disabled={isOwner || !isVerified}
           >
             <span className="item-action-title">Enviar mensaje</span>
@@ -363,7 +396,7 @@ function ItemPage() {
               }
               nav(`/propose-swap/${item.id}`);
             }}
-            disabled={!isVerified}
+            disabled={!isVerified || item.status === "paused"}
           >
             <span className="item-action-title">Proponer intercambio</span>
             <span className="item-action-sub">Ofrece un artículo a cambio</span>

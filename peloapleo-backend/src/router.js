@@ -1,7 +1,11 @@
 import { parse } from "node:url";
 import { sendError, sendNoContent } from "./utils/http.js";
 import { logError } from "./utils/logger.js";
-import { handleMulter, profilePhotoUpload } from "./middleware/upload.js";
+import {
+  handleMulter,
+  profilePhotoUpload,
+  listingPhotoUpload,
+} from "./middleware/upload.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { requireVerifiedUser } from "./middleware/verification.js";
 import * as authController from "./controllers/authController.js";
@@ -9,9 +13,10 @@ import * as listingController from "./controllers/listingController.js";
 import * as favoriteController from "./controllers/favoriteController.js";
 import * as conversationController from "./controllers/conversationController.js";
 import * as adminController from "./controllers/adminController.js";
-import * as reputationController from "./controllers/reputationController.js";
 import * as profileController from "./controllers/profileController.js";
+import * as reputationController from "./controllers/reputationController.js";
 import * as transactionController from "./controllers/transactionController.js";
+import * as notificationController from "./controllers/notificationController.js";
 import * as verificationController from "./controllers/verificationController.js";
 
 const routes = [
@@ -24,6 +29,11 @@ const routes = [
     method: "POST",
     pattern: /^\/api\/auth\/google$/,
     handler: authController.googleAuth,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/auth\/google\/complete$/,
+    handler: authController.completeGoogleRegistration,
   },
   {
     method: "POST",
@@ -156,17 +166,17 @@ const routes = [
   {
     method: "POST",
     pattern: /^\/api\/reputations\/?$/,
-    handler: reputationController.create,
+    handler: reputationController.rateUser,
   },
   {
     method: "GET",
-    pattern: /^\/api\/me\/reputations\/?$/,
-    handler: reputationController.listMine,
+    pattern: /^\/api\/users\/([^/]+)\/reputation\/?$/,
+    handler: reputationController.getUserReputation,
   },
   {
     method: "GET",
-    pattern: /^\/api\/users\/([^/]+)\/reputations\/?$/,
-    handler: reputationController.listForUser,
+    pattern: /^\/api\/me\/pending-ratings\/?$/,
+    handler: reputationController.getPendingRatings,
   },
 
   {
@@ -178,11 +188,6 @@ const routes = [
     method: "GET",
     pattern: /^\/api\/admin\/stats$/,
     handler: adminController.overview,
-  },
-  {
-    method: "GET",
-    pattern: /^\/api\/admin\/reputations$/,
-    handler: adminController.reputations,
   },
   {
     method: "GET",
@@ -200,6 +205,11 @@ const routes = [
     handler: adminController.getUser,
   },
   {
+    method: "DELETE",
+    pattern: /^\/api\/admin\/users\/([a-zA-Z0-9_-]+)$/,
+    handler: adminController.deleteUser,
+  },
+  {
     method: "GET",
     pattern: /^\/api\/admin\/listings$/,
     handler: adminController.listings,
@@ -208,6 +218,16 @@ const routes = [
     method: "PATCH",
     pattern: /^\/api\/admin\/listings\/([a-zA-Z0-9_-]+)$/,
     handler: adminController.updateListing,
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/api\/admin\/listings\/([a-zA-Z0-9_-]+)$/,
+    handler: adminController.deleteListing,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/admin\/listings\/([a-zA-Z0-9_-]+)\/pause$/,
+    handler: adminController.pauseListing,
   },
   {
     method: "GET",
@@ -221,8 +241,8 @@ const routes = [
   },
   {
     method: "GET",
-    pattern: /^\/api\/admin\/raw$/,
-    handler: adminController.raw,
+    pattern: /^\/api\/admin\/reputations$/,
+    handler: adminController.reputations,
   },
 
   // Rutas de verificación de identidad
@@ -262,13 +282,20 @@ const routes = [
     handler: verificationController.reset,
   },
 
-  // Rutas para transacciones e intercambios
   {
     method: "GET",
-    pattern: /^\/api\/transactions\/swaps$/,
+    pattern: /^\/api\/transactions\/swaps\/?$/,
     handler: async (params) => {
       await authMiddleware(params);
       return transactionController.listSwaps(params);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/transactions\/?$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return transactionController.create(params);
     },
   },
   {
@@ -309,6 +336,70 @@ const routes = [
     handler: async (params) => {
       await requireVerifiedUser(params.req, params.res, () => {});
       return transactionController.createSwap(params);
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/notifications$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return notificationController.getNotifications(params);
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/notifications\/unread-count$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return notificationController.getUnreadCount(params);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/notifications\/([a-zA-Z0-9_-]+)\/read$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return notificationController.markAsRead(params);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/notifications\/mark-all-read$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return notificationController.markAllAsRead(params);
+    },
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/api\/notifications\/([a-zA-Z0-9_-]+)$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return notificationController.deleteNotification(params);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/admin\/notifications$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return notificationController.sendAdminNotification(params);
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/admin\/notifications$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return notificationController.getAdminNotifications(params);
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/transactions\/swaps\/([a-zA-Z0-9_-]+)\/read$/,
+    handler: async (params) => {
+      await authMiddleware(params);
+      return transactionController.markSwapAsRead(params);
     },
   },
 ];

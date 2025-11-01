@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import { useData } from "../../context/DataContext";
 import ErrorBoundary from "../ErrorBoundary/ErrorBoundary";
+import NotificationBell from "../NotificationBell/NotificationBell";
 import logo from "../../logo.png";
 import "./Header.css";
 
@@ -90,6 +91,8 @@ function HeaderContent({ showNav }) {
             />
           </form>
         )}
+
+        {isHome && <NotificationBell />}
 
         {showNav && (
           <nav className="header-nav-desktop">

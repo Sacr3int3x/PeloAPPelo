@@ -6,10 +6,10 @@ import { FiLogOut } from "react-icons/fi";
 import "../styles/CategoryPage.css";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
-import { fetchMyReputations } from "../services/transactions";
 import { uploadProfilePhoto } from "../services/profile";
+import { getUserReputation } from "../services/transactions";
+import { realtime } from "../services/realtime";
 import VerificationStatus from "../components/VerificationStatus/VerificationStatus";
-import PendingRatings from "../components/PendingRatings/PendingRatings";
 import "./ProfilePage.css";
 
 function ProfilePage() {
@@ -20,10 +20,13 @@ function ProfilePage() {
   const token = auth?.token || null;
   const user = auth?.user || null;
 
-  const [reputations, setReputations] = useState([]);
   const [uploadPending, setUploadPending] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [userReputation, setUserReputation] = useState({
+    average: 0,
+    count: 0,
+  });
 
   const handleLogout = () => {
     auth.logout();
@@ -64,37 +67,41 @@ function ProfilePage() {
   };
 
   useEffect(() => {
-    if (!token) return;
-    let cancelled = false;
-    fetchMyReputations(token)
-      .then((response) => {
-        if (cancelled) return;
-        setReputations(response.reputations || []);
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        if (error?.status === 404) {
-          setReputations([]);
-          return;
-        }
-        console.error("No se pudieron cargar las reputaciones", error);
-      });
-    return () => {
-      cancelled = true;
+    if (!token || !user) return;
+
+    const loadUserReputation = async () => {
+      try {
+        const reputation = await getUserReputation(user.id, token);
+        setUserReputation(reputation);
+      } catch (error) {
+        console.error("Error loading user reputation:", error);
+        // Mantener valores por defecto en caso de error
+      }
     };
-  }, [token]);
 
-  const ratingSummary = useMemo(() => {
-    if (!reputations.length) return { average: 0, count: 0 };
-    const total = reputations.reduce(
-      (sum, rep) => sum + Number(rep.rating || 0),
-      0,
+    loadUserReputation();
+
+    // Suscribirse a actualizaciones de reputación en tiempo real
+    const handleReputationUpdate = (event) => {
+      const { userId, reputation } = event.detail || {};
+      if (String(userId) === String(user.id) && reputation) {
+        setUserReputation(reputation);
+      }
+    };
+
+    const offReputationUpdate = realtime.on(
+      "user.reputation.updated",
+      handleReputationUpdate,
     );
-    const average = Number((total / reputations.length).toFixed(2));
-    return { average, count: reputations.length };
-  }, [reputations]);
 
-  const completedSwaps = reputations.length;
+    return () => {
+      offReputationUpdate();
+    };
+  }, [token, user]);
+
+  const ratingSummary = userReputation;
+
+  const completedSwaps = 0; // TODO: Calcular desde transacciones
 
   const myItems = useMemo(() => {
     if (!user || !resolveByOwner) return [];
@@ -161,6 +168,16 @@ function ProfilePage() {
               ratingSummary.average !== undefined
                 ? ratingSummary.average.toFixed(1)
                 : "0.0"}
+              <small
+                style={{
+                  fontSize: "0.7em",
+                  color: "#64748b",
+                  display: "block",
+                  marginTop: "2px",
+                }}
+              >
+                ({ratingSummary.count || 0} calificaciones)
+              </small>
             </span>
             <span className="profile-stat-label">Reputación promedio</span>
           </div>
@@ -180,9 +197,6 @@ function ProfilePage() {
       {/* Sección de Verificación de Identidad */}
       <VerificationStatus />
 
-      {/* Sección de Valoraciones Pendientes */}
-      <PendingRatings />
-
       <section className="panel profile-menu">
         <div className="category-header-bar" style={{ marginBottom: 24 }}>
           <button
@@ -198,6 +212,16 @@ function ProfilePage() {
           <span style={{ width: 46 }}></span>
         </div>
         <div className="profile-links">
+          <Link to="/profile/pending-ratings" className="profile-link">
+            <div className="profile-link-text">
+              <span>Calificaciones pendientes</span>
+              <small>
+                Califica a los usuarios con los que has completado
+                transacciones.
+              </small>
+            </div>
+            <span aria-hidden>›</span>
+          </Link>
           <Link to="/profile/listings" className="profile-link">
             <div className="profile-link-text">
               <span>Mis publicaciones</span>
@@ -214,13 +238,6 @@ function ProfilePage() {
               <small>
                 Ver el detalle de las publicaciones vendidas y facturación.
               </small>
-            </div>
-            <span aria-hidden>›</span>
-          </Link>
-          <Link to="/reputation" className="profile-link">
-            <div className="profile-link-text">
-              <span>Reputaciones detalladas</span>
-              <small>Ver todas tus valoraciones y comentarios recibidos.</small>
             </div>
             <span aria-hidden>›</span>
           </Link>

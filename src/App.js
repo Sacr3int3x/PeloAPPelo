@@ -14,43 +14,17 @@ import "react-toastify/dist/ReactToastify.css";
 // Components that should load immediately
 import Header from "./components/Header/Header";
 import BottomNav from "./components/BottomNav/BottomNav";
+import ScrollToTop from "./components/ScrollToTop";
 import { useData } from "./context/DataContext";
 import LoadingPage from "./pages/LoadingPage";
+import "./styles/theme.css";
+import "./styles/animations.css";
 
 // Context Providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { DataProvider } from "./context/DataContext";
 import { MessageProvider } from "./context/MessageContext";
-
-import "./styles/theme.css";
-import "./styles/animations.css";
-
-// Indicador visual de versión nativa (solo en web)
-const NativeVersionIndicator = () => {
-  // No mostrar el indicador si estamos en Capacitor (APK)
-  if (typeof window !== "undefined" && window.Capacitor) {
-    return null;
-  }
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: '10px',
-      right: '10px',
-      background: 'linear-gradient(45deg, #1089c6, #00d4ff)',
-      color: 'white',
-      padding: '4px 8px',
-      borderRadius: '12px',
-      fontSize: '10px',
-      fontWeight: 'bold',
-      zIndex: 9999,
-      boxShadow: '0 2px 8px rgba(16, 137, 198, 0.3)',
-      border: '1px solid rgba(255, 255, 255, 0.2)'
-    }}>
-      NATIVA v2.0
-    </div>
-  );
-};
+import { NotificationProvider } from "./context/NotificationContext";
 
 // Lazy loaded pages
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -62,7 +36,6 @@ const BlockedUsersPage = lazy(() => import("./pages/BlockedUsersPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BillingDetails = lazy(() => import("./pages/BillingDetails"));
-const ReputationDetails = lazy(() => import("./pages/ReputationDetails"));
 const PublishPage = lazy(() => import("./pages/PublishPage"));
 const FavsPage = lazy(() => import("./pages/FavsPage"));
 const InboxPage = lazy(() => import("./pages/InboxPage"));
@@ -73,6 +46,9 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminUserProfilePage = lazy(() => import("./pages/AdminUserProfilePage"));
 const EditListingPage = lazy(() => import("./pages/EditListingPage"));
 const HelpCenterPage = lazy(() => import("./pages/HelpCenterPage"));
+const PendingRatingsPage = lazy(() => import("./pages/PendingRatingsPage"));
+const UserReputationPage = lazy(() => import("./pages/UserReputationPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 
 // Auth Guard Component
 function RequireAuth({ children, admin }) {
@@ -161,18 +137,18 @@ function AnimatedRoutes() {
             }
           />
           <Route
-            path="/billing"
+            path="/profile/pending-ratings"
             element={
               <RequireAuth>
-                <BillingDetails />
+                <PendingRatingsPage />
               </RequireAuth>
             }
           />
           <Route
-            path="/reputation"
+            path="/billing"
             element={
               <RequireAuth>
-                <ReputationDetails />
+                <BillingDetails />
               </RequireAuth>
             }
           />
@@ -225,6 +201,18 @@ function AnimatedRoutes() {
             }
           />
           <Route path="/help" element={<HelpCenterPage />} />
+          <Route
+            path="/user/:userId/reputation"
+            element={<UserReputationPage />}
+          />
+          <Route
+            path="/notifications"
+            element={
+              <RequireAuth>
+                <NotificationsPage />
+              </RequireAuth>
+            }
+          />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -235,7 +223,6 @@ function Shell() {
   return (
     <>
       <Header showNav={isDesktop} />
-      <NativeVersionIndicator />
       <div className={isDesktop ? "desktop-container" : ""}>
         <Suspense fallback={<LoadingPage />}>
           <AnimatedRoutes />
@@ -255,22 +242,25 @@ export default function App() {
         v7_relativeSplatPath: true,
       }}
     >
+      <ScrollToTop />
       <AuthProvider>
         <DataProvider>
           <MessageProvider>
-            <Shell />
-            <ToastContainer
-              position="top-right"
-              autoClose={4000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
+            <NotificationProvider>
+              <Shell />
+              <ToastContainer
+                position="top-right"
+                autoClose={4000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+              />
+            </NotificationProvider>
           </MessageProvider>
         </DataProvider>
       </AuthProvider>

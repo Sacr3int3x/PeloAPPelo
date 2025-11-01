@@ -105,7 +105,7 @@ export function rateLimit(options = { windowMs: 60000, max: 100 }) {
 
     if (recentHits.length >= options.max) {
       sendError(res, 429, "Demasiadas solicitudes, intente más tarde");
-      return;
+      return; // No llamar next() si se envía respuesta
     }
 
     // Registrar hit
@@ -127,14 +127,26 @@ export function securityHeaders(req, res, next) {
   // Prevenir MIME sniffing
   res.setHeader("X-Content-Type-Options", "nosniff");
 
-  // Política de seguridad de contenido
+  // Política de seguridad de contenido - permitir popups para autenticación
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';",
+    "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src 'self' https://accounts.google.com;",
   );
 
   // Referrer Policy
   res.setHeader("Referrer-Policy", "same-origin");
+
+  // Cross-Origin-Opener-Policy - permitir popups para autenticación
+  // Solo aplicar COOP restrictivo en rutas que no sean de autenticación
+  if (!req.url?.includes("/auth/")) {
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  }
+
+  // Cross-Origin-Embedder-Policy - permitir embedding necesario
+  // Solo aplicar COEP en rutas que no sean de autenticación
+  if (!req.url?.includes("/auth/")) {
+    res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  }
 
   next();
 }

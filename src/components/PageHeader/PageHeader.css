@@ -2,9 +2,31 @@
   margin-bottom: 1.5rem;
 }
 
+.page-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.page-header-text {
+  flex: 1;
+}
+
 .page-header .h1 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.page-header-subtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }

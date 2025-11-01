@@ -34,6 +34,7 @@ const UserProfilePage = () => {
     alt: "",
   });
   const [imageZoom, setImageZoom] = useState({ scale: 1, x: 0, y: 0 });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isAdmin = Boolean(currentUser?.isAdmin);
 
@@ -139,6 +140,30 @@ const UserProfilePage = () => {
       loadUserData(); // Recargar datos
     } catch (error) {
       toast.error(error.message);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userData) return;
+
+    try {
+      const response = await fetch(`/api/admin/users/${userData.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al eliminar usuario");
+      }
+
+      toast.success("Usuario eliminado exitosamente");
+      navigate("/admin"); // Volver al dashboard
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -273,6 +298,14 @@ const UserProfilePage = () => {
                   </span>
                 </div>
               </div>
+              <div className="user-actions">
+                <button
+                  className="btn danger sm"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  Eliminar Usuario
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -388,11 +421,11 @@ const UserProfilePage = () => {
           <h3>Estadísticas</h3>
           <div className="user-stats-grid">
             <div className="stat-item">
-              <div className="stat-value">{userData.listings || 0}</div>
+              <div className="stat-value">{userData.listingsCount || 0}</div>
               <div className="stat-label">Publicaciones</div>
             </div>
             <div className="stat-item">
-              <div className="stat-value">{userReputations.length}</div>
+              <div className="stat-value">{userData.reputationsCount || 0}</div>
               <div className="stat-label">Reputaciones</div>
             </div>
             <div className="stat-item">
@@ -477,6 +510,51 @@ const UserProfilePage = () => {
           )}
         </section>
       </div>
+
+      {/* Modal de confirmación para eliminar usuario */}
+      {showDeleteConfirm && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirmar eliminación</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                <HiOutlineX size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>
+                ¿Estás seguro de que quieres eliminar al usuario{" "}
+                <strong>
+                  {userData.name || userData.username || userData.email}
+                </strong>
+                ?
+              </p>
+              <p className="text-danger">
+                Esta acción no se puede deshacer. Se eliminarán todas las
+                publicaciones, conversaciones, reputaciones y datos asociados a
+                este usuario.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn outline"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancelar
+              </button>
+              <button className="btn danger" onClick={handleDeleteUser}>
+                Eliminar Usuario
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de imagen con zoom */}
       {imageModal.open && (

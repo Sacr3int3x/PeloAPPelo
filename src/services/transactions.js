@@ -42,6 +42,13 @@ export function deleteSwapProposal(proposalId, token) {
   });
 }
 
+export function markSwapAsRead(proposalId, token) {
+  return apiRequest(`/transactions/swaps/${proposalId}/read`, {
+    method: "POST",
+    token,
+  });
+}
+
 export function completeConversation(conversationId, token) {
   return apiRequest(`/conversations/${conversationId}/complete`, {
     method: "POST",
@@ -49,24 +56,39 @@ export function completeConversation(conversationId, token) {
   });
 }
 
-export function submitReputation({ transactionId, rating, comment }, token) {
-  return apiRequest("/reputations", {
+export function createTransaction(data, token) {
+  return apiRequest("/transactions", {
     method: "POST",
     token,
-    data: { transactionId, rating, comment },
+    data: {
+      listingId: data.listingId,
+      buyerId: data.buyerId,
+    },
   });
 }
 
-export function fetchMyReputations(token) {
-  return apiRequest("/me/reputations", { token });
+export function rateUser({ transactionId, toUserId, rating, comment }, token) {
+  return apiRequest("/reputations", {
+    method: "POST",
+    token,
+    data: { transactionId, toUserId, rating, comment },
+  });
 }
 
-export function fetchReputationsForUser(userId, token) {
-  return apiRequest(`/users/${userId}/reputations`, { token });
+export function getUserReputation(userId, token) {
+  return apiRequest(`/users/${userId}/reputation`, { token }).then(
+    (response) => response.reputation,
+  );
 }
 
-export function fetchAdminReputations(params, token) {
-  const query = new URLSearchParams(params || {}).toString();
-  const suffix = query ? `?${query}` : "";
-  return apiRequest(`/admin/reputations${suffix}`, { token });
+export function getUserReviews(userId, token) {
+  return apiRequest(`/users/${userId}/reputation`, { token }).then(
+    (response) => response.ratings || [],
+  );
+}
+
+export function getPendingRatings(token) {
+  return apiRequest("/me/pending-ratings", { token }).then(
+    (response) => response.pendingRatings,
+  );
 }

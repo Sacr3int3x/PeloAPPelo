@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../context/MessageContext";
 import { useData } from "../context/DataContext";
+import { useNotifications } from "../context/NotificationContext";
 
 // Servicios
 import {
@@ -31,6 +32,7 @@ import InboxNav from "../components/InboxNav/InboxNav";
 import SwapProposals from "../components/SwapProposals/SwapProposals";
 import ErrorModal from "../components/ErrorModal/ErrorModal";
 import VerificationRequiredModal from "../components/VerificationRequiredModal/VerificationRequiredModal";
+import MarcarComoVendidoModal from "../components/MarcarComoVendidoModal/MarcarComoVendidoModal";
 
 // Estilos
 import "../styles/InboxPage.css";
@@ -64,9 +66,9 @@ function InboxPage() {
     markConversationAsRead,
     blockParticipant,
     deleteConversation,
-    completeConversation,
   } = useMessages();
 
+  const { refreshCounts } = useNotifications();
   const { byId } = useData();
   const location = useLocation();
   const navigate = useNavigate();
@@ -88,6 +90,10 @@ function InboxPage() {
   const [selectedConversations, setSelectedConversations] = useState([]);
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [markSoldModal, setMarkSoldModal] = useState({
+    open: false,
+    listing: null,
+  });
 
   // Variables derivadas
   const isMobile = window.innerWidth <= 900;
@@ -110,10 +116,12 @@ function InboxPage() {
     if (conversationId) {
       setActiveId(conversationId);
       setTimeout(() => {
-        markConversationAsRead(conversationId);
+        markConversationAsRead(conversationId).then(() => {
+          refreshCounts();
+        });
       }, 100);
     }
-  }, [location.search, markConversationAsRead]);
+  }, [location.search, markConversationAsRead, refreshCounts]);
 
   useEffect(() => {
     if (activeId) {
@@ -158,6 +166,7 @@ function InboxPage() {
     try {
       await deleteSwapProposal(proposalId, token);
       setSwapProposals((prev) => prev.filter((p) => p.id !== proposalId));
+      refreshCounts(); // Actualizar contadores después de eliminar
     } catch (error) {
       console.error("Error al eliminar la propuesta:", error);
       setErrorModal({
@@ -657,13 +666,10 @@ function InboxPage() {
                     <button
                       className="btn-mark-sold"
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            "¿Marcar como vendido y cerrar conversación?",
-                          )
-                        ) {
-                          completeConversation(activeConversation.id);
-                        }
+                        setMarkSoldModal({
+                          open: true,
+                          listing: activeConversation.listing,
+                        });
                       }}
                       title="Marcar como vendido"
                     >
@@ -840,6 +846,25 @@ function InboxPage() {
         onStartVerification={() => {
           setShowVerificationModal(false);
           navigate("/profile");
+        }}
+      />
+      <MarcarComoVendidoModal
+        listing={markSoldModal.listing}
+        isOpen={markSoldModal.open}
+        onClose={() => setMarkSoldModal({ open: false, listing: null })}
+        onSuccess={async () => {
+          // Enviar mensaje automático después de marcar como vendido
+          try {
+            await sendMessageAction(
+              activeConversation.id,
+              myEmail,
+              "✅ Venta completada. Gracias por tu calificación. Puedes ver todas tus calificaciones en tu perfil.",
+              [],
+            );
+          } catch (error) {
+            console.error("Error al enviar mensaje automático:", error);
+          }
+          setMarkSoldModal({ open: false, listing: null });
         }}
       />
     </main>

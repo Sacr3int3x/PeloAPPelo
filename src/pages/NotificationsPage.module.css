@@ -1,0 +1,136 @@
+.notificationsContainer {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.notificationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notificationItem {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.notificationItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.notificationItem.unread {
+  border-left: 4px solid #4f46e5;
+  background: linear-gradient(135deg, #fefefe, #f8fafc);
+}
+
+.notificationContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.notificationTitle {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.notificationMessage {
+  margin: 0 0 12px 0;
+  color: #6b7280;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.notificationTime {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.notificationDeleteBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.notificationItem:hover .notificationDeleteBtn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.notificationDeleteBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.loading .spinner {
+  margin: 0 auto 16px;
+}
+
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: #6b7280;
+}
+
+.empty svg {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .notificationsContainer {
+    padding: 16px 0;
+  }
+
+  .notificationItem {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .notificationTitle {
+    font-size: 1rem;
+  }
+
+  .notificationMessage {
+    font-size: 0.9rem;
+  }
+}

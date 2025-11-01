@@ -171,6 +171,67 @@ export function AuthProvider({ children }) {
     }
   }, [persistSession]);
 
+  const registerWithGoogle = useCallback(async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
+
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      // Enviar el token de Firebase al backend
+      const response = await apiRequest("/auth/google", {
+        method: "POST",
+        data: { idToken },
+      });
+
+      // Si requiere registro completo, devolver los datos de Google
+      if (response.requiresRegistration) {
+        return {
+          success: true,
+          requiresRegistration: true,
+          googleData: response.googleData,
+        };
+      }
+
+      // Usuario existente - persistir sesión
+      persistSession(response.user, response.token);
+      return { success: true, user: response.user };
+    } catch (error) {
+      console.error("Error en registro con Google:", error);
+      return {
+        success: false,
+        error: error?.message || "No se pudo registrarse con Google.",
+      };
+    }
+  }, [persistSession]);
+
+  const completeGoogleRegistration = useCallback(
+    async (googleData, additionalData) => {
+      try {
+        const response = await apiRequest("/auth/google/complete", {
+          method: "POST",
+          data: {
+            googleData,
+            ...additionalData,
+          },
+        });
+
+        persistSession(response.user, response.token);
+        return { success: true, user: response.user };
+      } catch (error) {
+        console.error("Error completando registro con Google:", error);
+        return {
+          success: false,
+          error: error?.message || "No se pudo completar el registro.",
+        };
+      }
+    },
+    [persistSession],
+  );
+
   const register = useCallback(
     async ({ email, password, name, location, username, phone }) => {
       try {
@@ -215,10 +276,23 @@ export function AuthProvider({ children }) {
       login,
       loginWithGoogle,
       register,
+      registerWithGoogle,
+      completeGoogleRegistration,
       logout,
       refresh,
     }),
-    [user, token, loading, login, loginWithGoogle, register, logout, refresh],
+    [
+      user,
+      token,
+      loading,
+      login,
+      loginWithGoogle,
+      register,
+      registerWithGoogle,
+      completeGoogleRegistration,
+      logout,
+      refresh,
+    ],
   );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

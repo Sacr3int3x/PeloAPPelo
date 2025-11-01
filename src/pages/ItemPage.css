@@ -446,6 +446,128 @@
   color: rgba(15, 23, 42, 0.7);
 }
 
-.item-action-button--primary .item-action-sub {
-  color: rgba(248, 250, 252, 0.82);
+.seller-reviews-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin: 0;
+}
+
+.seller-reviews-link:hover {
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+.seller-reviews-link:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* Estilos para reseñas del vendedor */
+.seller-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-item {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-rating-value {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.review-date {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.review-comment {
+  margin-bottom: 12px;
+}
+
+.review-comment p {
+  font-style: italic;
+  color: var(--color-text);
+  margin: 0;
+  padding: 12px;
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-primary);
+}
+
+.review-user {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.review-user-label {
+  font-weight: 500;
+}
+
+.review-user-name {
+  font-weight: 600;
+}
+
+.show-more-reviews-btn {
+  align-self: center;
+  padding: 8px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  margin-top: 8px;
+}
+
+.show-more-reviews-btn:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.reviews-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+.reviews-loading p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.no-reviews {
+  text-align: center;
+  padding: 24px;
+  color: var(--color-text-secondary);
 }

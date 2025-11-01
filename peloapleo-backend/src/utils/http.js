@@ -9,19 +9,10 @@ export function getRequestOrigin(req) {
 
 export function applyCors(req, res) {
   const origin = getRequestOrigin(req);
-
-  // Para apps móviles (como Capacitor), permitir sin origin header
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  } else {
-    // Permitir cualquier origen si no hay header origin (apps móviles)
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    // No se puede usar credentials con wildcard origin
-    res.setHeader("Access-Control-Allow-Credentials", "false");
   }
-
   res.setHeader(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Requested-With",
@@ -30,7 +21,12 @@ export function applyCors(req, res) {
     "Access-Control-Allow-Methods",
     "GET, POST, PATCH, PUT, DELETE, OPTIONS",
   );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("X-Powered-By", SERVER_NAME);
+
+  // Headers para Firebase Authentication (popups)
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 }
 
 export function sendJson(res, statusCode, payload, extraHeaders = {}) {

@@ -1,190 +1,278 @@
 .pending-ratings {
-  background: white;
-  border-radius: 8px;
+  max-width: 800px;
+  margin: 0 auto;
   padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .pending-ratings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e0e0e0;
+  text-align: center;
+  margin-bottom: 32px;
 }
 
-.pending-ratings-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+.pending-ratings-header h2 {
+  color: #1e293b;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
 }
 
 .pending-count {
-  background: #ff6b6b;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  min-width: 20px;
+  color: #64748b;
+  font-size: 16px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.loading-state,
+.error-state {
   text-align: center;
-}
-
-.pending-ratings-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   padding: 40px 20px;
-  color: #666;
 }
 
-.pending-ratings-loading .spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 12px;
+.skeleton-loader {
+  height: 120px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 12px;
+  margin-bottom: 16px;
 }
 
-@keyframes spin {
+@keyframes loading {
   0% {
-    transform: rotate(0deg);
+    background-position: 200% 0;
   }
   100% {
-    transform: rotate(360deg);
+    background-position: -200% 0;
   }
 }
 
-.pending-ratings-empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-}
-
-.pending-ratings-empty p {
-  margin: 0 0 8px 0;
+.error-state p {
+  color: #dc2626;
   font-size: 16px;
+  margin-bottom: 16px;
 }
 
-.pending-ratings-empty small {
-  color: #999;
-  font-size: 14px;
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.empty-state h3 {
+  color: #1e293b;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  color: #64748b;
+  font-size: 16px;
+  margin: 0;
 }
 
 .pending-ratings-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-.pending-rating-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: #fafafa;
+.pending-rating-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
 }
 
-.pending-rating-item:hover {
-  border-color: #007bff;
-  background: #f8f9ff;
+.pending-rating-card:hover {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
 }
 
-.pending-rating-content {
+.transaction-summary {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.listing-info,
+.user-info {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 16px;
-  flex: 1;
 }
 
-.pending-rating-listing {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pending-rating-image {
-  width: 48px;
-  height: 48px;
+.listing-thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
   object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
+  border: 2px solid #e2e8f0;
 }
 
-.pending-rating-info h4 {
-  margin: 0 0 4px 0;
-  font-size: 14px;
+.listing-details h4,
+.user-details h4 {
+  margin: 0 0 6px 0;
+  font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #1e293b;
 }
 
-.pending-rating-price {
+.listing-price {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #059669;
+}
+
+.transaction-date,
+.user-role {
   margin: 0;
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
+  font-size: 14px;
+  color: #64748b;
 }
 
-.pending-rating-user {
+.user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
 }
 
-.pending-rating-user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.user-avatar img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 2px solid #e0e0e0;
 }
 
-.pending-rating-user-info p {
-  margin: 0 0 2px 0;
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.rating-actions {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
   font-size: 14px;
-  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
 }
 
-.pending-rating-user-info small {
-  color: #666;
-  font-size: 12px;
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
-.pending-rating-btn {
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
+.btn-secondary:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
 }
 
-/* Responsive */
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(102, 126, 234, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
 @media (max-width: 768px) {
-  .pending-rating-item {
+  .pending-ratings {
+    padding: 16px;
+  }
+
+  .pending-ratings-header h2 {
+    font-size: 24px;
+  }
+
+  .transaction-summary {
     flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    gap: 16px;
   }
 
-  .pending-rating-content {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .pending-rating-listing,
-  .pending-rating-user {
-    width: 100%;
-  }
-
-  .pending-rating-btn {
-    align-self: stretch;
+  .listing-info,
+  .user-info {
+    justify-content: center;
     text-align: center;
+  }
+
+  .pending-rating-card {
+    padding: 20px;
+  }
+
+  .listing-thumbnail {
+    width: 60px;
+    height: 60px;
+  }
+
+  .user-avatar {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pending-ratings-header h2 {
+    font-size: 20px;
+  }
+
+  .pending-rating-card {
+    padding: 16px;
+  }
+
+  .listing-details h4,
+  .user-details h4 {
+    font-size: 16px;
   }
 }

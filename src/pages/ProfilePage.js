@@ -130,7 +130,7 @@ function ProfilePage() {
             {user.avatar ? (
               <img src={user.avatar} alt={`Foto de perfil de ${user.name}`} />
             ) : (
-              user.name?.charAt(0).toUpperCase()
+              String(user.name || "").charAt(0).toUpperCase()
             )}
           </div>
           <label
@@ -155,7 +155,7 @@ function ProfilePage() {
             </div>
           )}
         </div>
-        <h1 className="profile-name">{user.name}</h1>
+        <h1 className="profile-name">{String(user.name || "")}</h1>
         <p className="profile-meta">Miembro desde {memberYear}</p>
         <div className="profile-stats">
           <div className="profile-stat">

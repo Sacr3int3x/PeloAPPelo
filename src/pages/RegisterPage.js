@@ -25,6 +25,7 @@ function RegisterPage() {
     completeGoogleRegistration,
     user,
     refresh,
+    googleRegistrationData,
   } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
@@ -34,6 +35,15 @@ function RegisterPage() {
   useEffect(() => {
     if (user) nav(next);
   }, [user, nav, next]);
+
+  useEffect(() => {
+    if (googleRegistrationData) {
+      setGoogleData(googleRegistrationData);
+      setIsCompletingGoogleRegistration(true);
+      setFullName(googleRegistrationData.name || "");
+      setEmail(googleRegistrationData.email || "");
+    }
+  }, [googleRegistrationData]);
 
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -132,20 +142,8 @@ function RegisterPage() {
 
     if (!result?.success) {
       setError(result?.error || "No se pudo registrarse con Google.");
-      return;
     }
-
-    if (result.requiresRegistration) {
-      // Usuario nuevo - guardar datos de Google y mostrar formulario
-      setGoogleData(result.googleData);
-      setIsCompletingGoogleRegistration(true);
-      // Pre-llenar campos con datos de Google
-      setFullName(result.googleData.name || "");
-      setEmail(result.googleData.email || "");
-    } else {
-      // Usuario existente - redirigir
-      nav(next);
-    }
+    // El resto se maneja en el useEffect cuando googleRegistrationData cambie
   };
 
   const score = password ? passwordScore(password) : 0;

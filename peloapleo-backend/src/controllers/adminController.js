@@ -596,6 +596,28 @@ export async function pauseListing({ req, res, params }) {
   sendJson(res, 200, { item: result });
 }
 
+export async function unpauseListing({ req, res, params }) {
+  const token = extractToken(req);
+  const admin = await requireUser(token);
+  ensureAdmin(admin);
+  const [listingId] = params;
+
+  const result = await adminUpdateListing({
+    listingId,
+    updates: { status: "active" },
+  });
+
+  await recordAudit({
+    userId: admin.id,
+    action: "listing.unpause",
+    targetType: "listing",
+    targetId: listingId,
+    details: { unpausedListing: result.name, ownerId: result.ownerId },
+  });
+
+  sendJson(res, 200, { item: result });
+}
+
 export async function auditLogs({ req, res, query }) {
   const token = extractToken(req);
   const admin = await requireUser(token);

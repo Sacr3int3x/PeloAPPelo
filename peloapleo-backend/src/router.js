@@ -230,6 +230,11 @@ const routes = [
     handler: adminController.pauseListing,
   },
   {
+    method: "POST",
+    pattern: /^\/api\/admin\/listings\/([a-zA-Z0-9_-]+)\/unpause$/,
+    handler: adminController.unpauseListing,
+  },
+  {
     method: "GET",
     pattern: /^\/api\/admin\/conversations$/,
     handler: adminController.conversations,

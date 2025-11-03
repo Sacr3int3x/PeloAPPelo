@@ -55,72 +55,6 @@
         "count": 7,
         "lastUpdated": "2025-11-01T01:56:10.304Z"
       }
-    },
-    {
-      "id": "usr_e52e7cd02734416f",
-      "email": "asesor.fttxg@gmail.com",
-      "username": "asesor123",
-      "name": "Asesor fttxg",
-      "location": "Miranda",
-      "phone": "04142783001",
-      "passwordHash": "0e5b2a7f93af1e5a97ba25ac9de28c4362e5ec652c74d234c3ea3014e86d9e33",
-      "since": "2025-10-29T13:43:28.105Z",
-      "createdAt": "2025-10-29T13:43:28.105Z",
-      "updatedAt": "2025-10-29T13:46:52.296Z",
-      "role": "user",
-      "avatar": "https://res.cloudinary.com/dcd5m9otg/image/upload/v1761745611/peloapelo/profile-usr_e52e7cd02734416f-1761745610758.jpg"
-    },
-    {
-      "id": "usr_3c12bfd17e6f4478",
-      "email": "labina@gmail.com",
-      "username": "labina123",
-      "name": "Labina",
-      "location": "Amazonas",
-      "phone": "21312312312312213123",
-      "passwordHash": "d2b000ce0875cad8615dd8cf34f788635c959a0ce2b8a977e22caab745380b06",
-      "since": "2025-10-29T19:22:01.920Z",
-      "createdAt": "2025-10-29T19:22:01.920Z",
-      "updatedAt": "2025-10-29T19:22:01.920Z",
-      "role": "user",
-      "verificationStatus": "unverified",
-      "identityDocuments": null,
-      "verificationRequestedAt": null,
-      "verificationCompletedAt": null
-    },
-    {
-      "id": "usr_2407caf3970c499b",
-      "email": "prueba@gmail.com",
-      "username": "prueba1",
-      "name": "Prueba1",
-      "location": "Anzoátegui",
-      "phone": "04141123798",
-      "passwordHash": "ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f",
-      "since": "2025-10-30T00:00:23.769Z",
-      "createdAt": "2025-10-30T00:00:23.769Z",
-      "updatedAt": "2025-10-30T00:00:23.769Z",
-      "role": "user",
-      "verificationStatus": "unverified",
-      "identityDocuments": null,
-      "verificationRequestedAt": null,
-      "verificationCompletedAt": null
-    },
-    {
-      "id": "usr_836f7974838e45f9",
-      "firebaseUid": "s3JuZyjvw5WvoR9KDI4sR5KVog03",
-      "email": "anibalaubieda@gmail.com",
-      "name": "anibal ubieda",
-      "username": "aaug",
-      "location": "Anzoátegui",
-      "phone": "4141123707",
-      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocLKxuBReDs8zRYq09WJ9Qzf_UBFF-y6azjV1IQ0qhHQMwPcaw=s96-c",
-      "emailVerified": true,
-      "createdAt": "2025-11-01T03:03:04.950Z",
-      "updatedAt": "2025-11-01T03:03:04.950Z",
-      "lastLoginAt": "2025-11-01T03:03:04.950Z",
-      "verificationStatus": "unverified",
-      "identityDocuments": null,
-      "verificationRequestedAt": null,
-      "verificationCompletedAt": null
     }
   ],
   "listings": [],
@@ -149,46 +83,11 @@
       "expiresAt": "2025-10-28T17:43:44.636Z"
     },
     {
-      "id": "sess_d6dbb3e94227493b",
-      "token": "BfZuFS2KrXx9GWwuWcp7luh7DdZGM0bRbzCbWKD91CE",
-      "userId": "usr_4dcdd45c919a44c7",
-      "createdAt": "2025-10-26T23:21:18.941Z",
-      "expiresAt": "2025-11-02T23:21:18.940Z"
-    },
-    {
       "id": "sess_b870ebd46334481d",
       "token": "UB-i4kTHiARAyDpXNEOpczN8uWH4y5iz9Wfwero_E9A",
       "userId": "usr_ana_demo",
       "createdAt": "2025-10-26T23:28:27.020Z",
       "expiresAt": "2025-11-02T23:28:27.020Z"
-    },
-    {
-      "id": "sess_40aa345b860549e1",
-      "token": "UYBQ7Ei3vVDHCSOrBn5tZlnvfsIlEzIbWwEfP2Pb67o",
-      "userId": "usr_4dcdd45c919a44c7",
-      "createdAt": "2025-10-27T00:27:20.562Z",
-      "expiresAt": "2025-11-03T00:27:20.561Z"
-    },
-    {
-      "id": "sess_966712554d17430e",
-      "token": "f88M7jjzI9-ueRKpQ3glhJOzc_g5nO8oAAoTZpzumD8",
-      "userId": "usr_4dcdd45c919a44c7",
-      "createdAt": "2025-10-27T14:27:57.581Z",
-      "expiresAt": "2025-11-03T14:27:57.580Z"
-    },
-    {
-      "id": "sess_fa2944919ce34068",
-      "token": "O7IeWXMEoShCUzMwlrSgU90C2V58UDYfvGsqUJpdnSI",
-      "userId": "usr_4dcdd45c919a44c7",
-      "createdAt": "2025-10-27T14:37:28.098Z",
-      "expiresAt": "2025-11-03T14:37:28.097Z"
-    },
-    {
-      "id": "sess_da7caff77d354652",
-      "token": "AbSbZn8iWvUciz1y6ofezu4Cn_e-oqFJ5nkFDG4qU4M",
-      "userId": "usr_4dcdd45c919a44c7",
-      "createdAt": "2025-10-27T14:51:08.218Z",
-      "expiresAt": "2025-11-03T14:51:08.217Z"
     },
     {
       "id": "sess_6855413d7eea427c",
@@ -238,13 +137,6 @@
       "userId": "usr_ana_demo",
       "createdAt": "2025-10-27T15:17:39.838Z",
       "expiresAt": "2025-11-03T15:17:39.838Z"
-    },
-    {
-      "id": "sess_5ff711031c814029",
-      "token": "Gqa65hVgQcA2_n-9ffBt-aQ7ftMeYm3VXc2EJ1GfulM",
-      "userId": "usr_4dcdd45c919a44c7",
-      "createdAt": "2025-10-27T15:23:59.744Z",
-      "expiresAt": "2025-11-03T15:23:59.744Z"
     },
     {
       "id": "sess_9288a6cf5f4a4a44",
@@ -450,46 +342,11 @@
       "expiresAt": "2025-11-05T12:25:04.862Z"
     },
     {
-      "id": "sess_517b928864f34072",
-      "token": "iEr2IZzFrhk1BM6aQ9ihQYmHe8jk3vfkgcaQMJuvgJc",
-      "userId": "usr_e52e7cd02734416f",
-      "createdAt": "2025-10-29T13:43:28.126Z",
-      "expiresAt": "2025-11-05T13:43:28.126Z"
-    },
-    {
-      "id": "sess_26646955c0354377",
-      "token": "6I4PyESGBs2lbnUZ8cAp_z6AcUfWhKHqGDbZjaxSjUQ",
-      "userId": "usr_4dcdd45c919a44c7",
-      "createdAt": "2025-10-29T13:44:17.793Z",
-      "expiresAt": "2025-11-05T13:44:17.791Z"
-    },
-    {
-      "id": "sess_9e919eeb5387447c",
-      "token": "TqKKdbhn9yQv9NAMwyLJwwI2QtQxsxuNwz_oc3rFp-U",
-      "userId": "usr_e52e7cd02734416f",
-      "createdAt": "2025-10-29T13:46:50.483Z",
-      "expiresAt": "2025-11-05T13:46:50.483Z"
-    },
-    {
-      "id": "sess_ff9ef7f0bb3a4062",
-      "token": "8Kha99BJYhhWyoI2WMNE3RMeA49F55u3_MdP8OVA_tc",
-      "userId": "usr_e52e7cd02734416f",
-      "createdAt": "2025-10-29T13:46:52.304Z",
-      "expiresAt": "2025-11-05T13:46:52.304Z"
-    },
-    {
       "id": "sess_a7ac7752c0ab49cb",
       "token": "cJVHu89HfWjb-IbquI-0jSXw8ZtNDEBe3Kc3sgbElvQ",
       "userId": "usr_4dcdd45c919a44c7",
       "createdAt": "2025-10-29T18:20:42.456Z",
       "expiresAt": "2025-11-05T18:20:42.456Z"
-    },
-    {
-      "id": "sess_509208bbb81846c7",
-      "token": "QDNcrQUBJIEWDuDuSJayKilCPZaxOnzH0Vim_18rc9A",
-      "userId": "usr_3c12bfd17e6f4478",
-      "createdAt": "2025-10-29T19:22:01.927Z",
-      "expiresAt": "2025-11-05T19:22:01.927Z"
     },
     {
       "id": "sess_3fcd9665866f4549",
@@ -511,13 +368,6 @@
       "userId": "usr_4dcdd45c919a44c7",
       "createdAt": "2025-10-29T19:42:41.977Z",
       "expiresAt": "2025-11-05T19:42:41.976Z"
-    },
-    {
-      "id": "sess_6d5a014aaabf4ce5",
-      "token": "_WufZXr8JmNQSJc23pwKVOheu_KoStwhmM0KNKozJbc",
-      "userId": "usr_2407caf3970c499b",
-      "createdAt": "2025-10-30T00:00:23.787Z",
-      "expiresAt": "2025-11-06T00:00:23.787Z"
     },
     {
       "id": "sess_da948878add0414c",
@@ -854,9 +704,173 @@
       "userId": "usr_4dcdd45c919a44c7",
       "createdAt": "2025-11-01T13:06:40.218Z",
       "expiresAt": "2025-11-08T13:06:40.217Z"
+    },
+    {
+      "id": "sess_074ea2f689fb400d",
+      "token": "_1i1A9O-Wjk3Sxjw0uwPtIoSxfXUIHVFpjVoODZWSRU",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-11-03T20:28:29.216Z",
+      "expiresAt": "2025-11-10T20:28:29.216Z"
+    },
+    {
+      "id": "sess_27b8a53461f74d04",
+      "token": "8EABCm9WHJoUCxJwtcitl09WDiovB_cRpbqq8vuOKpA",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-11-03T20:41:04.707Z",
+      "expiresAt": "2025-11-10T20:41:04.706Z"
+    },
+    {
+      "id": "sess_3013695eacf74ff9",
+      "token": "ktszt3gRkegsan4PqlXC3jhAo-UH_xzuuidofy3axvU",
+      "userId": "usr_4dcdd45c919a44c7",
+      "createdAt": "2025-11-03T20:59:58.356Z",
+      "expiresAt": "2025-11-10T20:59:58.356Z"
     }
   ],
   "auditLogs": [
+    {
+      "id": "aud_3a3f4c05a52744bd",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "user.delete",
+      "targetType": "user",
+      "targetId": "usr_3c12bfd17e6f4478",
+      "details": {
+        "deletedUser": "labina@gmail.com"
+      },
+      "createdAt": "2025-11-03T21:17:01.598Z"
+    },
+    {
+      "id": "aud_9aac31c96bec4d98",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.delete",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {
+        "deletedListing": "Samsung galaxy S25 ultra",
+        "ownerId": "usr_4dcdd45c919a44c7"
+      },
+      "createdAt": "2025-11-03T21:15:44.350Z"
+    },
+    {
+      "id": "aud_75da22cc109c478b",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.unpause",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {
+        "unpausedListing": "Samsung galaxy S25 ultra",
+        "ownerId": "usr_4dcdd45c919a44c7"
+      },
+      "createdAt": "2025-11-03T21:14:24.464Z"
+    },
+    {
+      "id": "aud_7fedea1351374b0e",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.update",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {},
+      "createdAt": "2025-11-03T21:11:53.075Z"
+    },
+    {
+      "id": "aud_5a236f7647d142b2",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.update",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {},
+      "createdAt": "2025-11-03T21:11:32.170Z"
+    },
+    {
+      "id": "aud_d69276b8154f4c1b",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.update",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {},
+      "createdAt": "2025-11-03T21:08:07.256Z"
+    },
+    {
+      "id": "aud_aee42d5eb42d438b",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.update",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {},
+      "createdAt": "2025-11-03T21:06:52.451Z"
+    },
+    {
+      "id": "aud_ccb8e4988730478a",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.update",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {},
+      "createdAt": "2025-11-03T21:04:51.971Z"
+    },
+    {
+      "id": "aud_a3c8aeebfe2848da",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.update",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {},
+      "createdAt": "2025-11-03T21:02:56.938Z"
+    },
+    {
+      "id": "aud_e9e639d0e1b4429c",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "user.delete",
+      "targetType": "user",
+      "targetId": "usr_e52e7cd02734416f",
+      "details": {
+        "deletedUser": "asesor.fttxg@gmail.com"
+      },
+      "createdAt": "2025-11-03T20:57:41.286Z"
+    },
+    {
+      "id": "aud_443cf747ba0042a0",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "user.delete",
+      "targetType": "user",
+      "targetId": "usr_836f7974838e45f9",
+      "details": {
+        "deletedUser": "anibalaubieda@gmail.com"
+      },
+      "createdAt": "2025-11-03T20:57:27.910Z"
+    },
+    {
+      "id": "aud_e07dff130d9847e6",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "user.delete",
+      "targetType": "user",
+      "targetId": "usr_2407caf3970c499b",
+      "details": {
+        "deletedUser": "prueba@gmail.com"
+      },
+      "createdAt": "2025-11-03T20:57:18.584Z"
+    },
+    {
+      "id": "aud_9340daecaa1d459b",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "listing.pause",
+      "targetType": "listing",
+      "targetId": "lst_c2c5ab6c7c7e45cf",
+      "details": {
+        "pausedListing": "Samsung galaxy S25 ultra",
+        "ownerId": "usr_4dcdd45c919a44c7"
+      },
+      "createdAt": "2025-11-03T20:46:15.773Z"
+    },
+    {
+      "id": "aud_eb217ae1d15b4fc6",
+      "userId": "usr_4dcdd45c919a44c7",
+      "action": "user.update",
+      "targetType": "user",
+      "targetId": "usr_2407caf3970c499b",
+      "details": {},
+      "createdAt": "2025-11-03T20:45:58.755Z"
+    },
     {
       "id": "aud_52949f142c1e4bac",
       "userId": "usr_ana_demo",
@@ -1240,23 +1254,7 @@
       "createdAt": "2025-11-01T00:30:58.374Z"
     }
   ],
-  "adminNotifications": [
-    {
-      "id": "admin-1761964089601-qkkdco2d3",
-      "type": "admin",
-      "title": "Prueba1",
-      "message": "kjghfhfcjhkjb,jnkhvhjgvhkjnljgj",
-      "actionUrl": null,
-      "readBy": [
-        "usr_4dcdd45c919a44c7",
-        "usr_ana_demo",
-        "usr_d46b84b3d7304873",
-        "usr_836f7974838e45f9"
-      ],
-      "createdAt": "2025-11-01T02:28:09.601Z",
-      "sentBy": "usr_ana_demo"
-    }
-  ],
+  "adminNotifications": [],
   "messages": [
     {
       "id": "msg_Kkn4tdGD5eFNCmSXbpexM",

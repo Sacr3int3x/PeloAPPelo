@@ -67,17 +67,21 @@ export function DataProvider({ children }) {
   }, [searches]);
 
   const fetchListings = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const response = await apiRequest("/listings");
-      const normalized = (response.items || []).map(withNormalizedImages);
-      setItems(normalized);
+      const response = await apiRequest("/listings", {
+        token,
+        data: { includeOwn: true },
+      });
+      const items = response.items.map(withNormalizedImages);
+      setItems(items);
     } catch (error) {
-      console.error("No se pudieron cargar las publicaciones", error);
+      console.error("Error fetching listings:", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     fetchListings();
@@ -229,15 +233,6 @@ export function DataProvider({ children }) {
           token,
         });
         const updated = withNormalizedImages(response.item);
-        setItems((prev) =>
-          prev.map((item) => (String(item.id) === String(id) ? updated : item)),
-        );
-        setFavoriteItems((prev) => {
-          if (!prev.has(String(id))) return prev;
-          const next = new Map(prev);
-          next.set(String(id), updated);
-          return next;
-        });
         return { success: true, item: updated };
       } catch (error) {
         return {
@@ -262,13 +257,6 @@ export function DataProvider({ children }) {
         await apiRequest(`/listings/${key}`, {
           method: "DELETE",
           token,
-        });
-        setItems((prev) => prev.filter((item) => String(item.id) !== key));
-        setFavoriteItems((prev) => {
-          if (!prev.has(key)) return prev;
-          const next = new Map(prev);
-          next.delete(key);
-          return next;
         });
         return { success: true };
       } catch (error) {

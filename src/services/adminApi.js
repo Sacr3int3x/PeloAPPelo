@@ -56,6 +56,13 @@ export function pauseAdminListing(token, listingId) {
   });
 }
 
+export function unpauseAdminListing(token, listingId) {
+  return apiRequest(`/admin/listings/${listingId}/unpause`, {
+    method: "POST",
+    token,
+  });
+}
+
 export function fetchAdminConversations(token, params = {}) {
   return apiRequest(`/admin/conversations${toQueryString(params)}`, { token });
 }

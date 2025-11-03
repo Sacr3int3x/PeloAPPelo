@@ -26,6 +26,7 @@ function ProfileListingsPage() {
   const data = useData();
   const navigate = useNavigate();
   const updateStatus = data?.updateStatus || (() => {});
+  const deleteListing = data?.deleteListing || (() => {});
   const refreshListings = data?.refresh || (() => {});
 
   const listings = useMemo(() => {
@@ -83,6 +84,7 @@ function ProfileListingsPage() {
         const result = await updateStatus(listingId, nextStatus);
         if (result?.success) {
           setFeedback("Estado actualizado correctamente.");
+          refreshListings();
         } else if (result?.error) {
           setFeedback(result.error);
         } else {
@@ -93,6 +95,28 @@ function ProfileListingsPage() {
       message,
       listingId,
       nextStatus,
+    });
+  };
+
+  const handleDelete = async (listingId) => {
+    const message =
+      "¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.";
+    setConfirmAction({
+      show: true,
+      action: async () => {
+        const result = await deleteListing(listingId);
+        if (result?.success) {
+          setFeedback("Publicación eliminada correctamente.");
+          refreshListings();
+        } else if (result?.error) {
+          setFeedback(result.error);
+        } else {
+          setFeedback("No se pudo eliminar la publicación.");
+        }
+        setConfirmAction({ show: false, action: null });
+      },
+      message,
+      listingId,
     });
   };
 
@@ -211,36 +235,43 @@ function ProfileListingsPage() {
                     <HiPencil size={18} style={{ marginRight: 4 }} />
                     Editar
                   </button>
-                  {listing.status !== "active" && (
-                    <button
-                      type="button"
-                      className="status-btn outline"
-                      onClick={() => handleStatusChange(listing.id, "active")}
-                    >
-                      Reactivar
-                    </button>
-                  )}
                   {listing.status === "active" && (
-                    <button
-                      type="button"
-                      className="status-btn outline"
-                      onClick={() => handleStatusChange(listing.id, "paused")}
-                    >
-                      Pausar
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="status-btn outline"
+                        onClick={() => handleStatusChange(listing.id, "paused")}
+                      >
+                        Pausar
+                      </button>
+                      <button
+                        type="button"
+                        className="status-btn danger"
+                        onClick={() => handleStatusChange(listing.id, "sold")}
+                      >
+                        Finalizar
+                      </button>
+                    </>
                   )}
-                  {!["sold", "finalizado", "finalized", "paused"].includes(
-                    listing.status,
-                  ) && (
-                    <button
-                      type="button"
-                      className="status-btn danger"
-                      onClick={() => handleStatusChange(listing.id, "sold")}
-                    >
-                      Finalizar
-                    </button>
+                  {listing.status === "paused" && (
+                    <>
+                      <button
+                        type="button"
+                        className="status-btn outline"
+                        onClick={() => handleStatusChange(listing.id, "active")}
+                      >
+                        Reactivar
+                      </button>
+                      <button
+                        type="button"
+                        className="status-btn danger"
+                        onClick={() => handleDelete(listing.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </>
                   )}
-                  {["sold", "finalizado", "finalized", "paused"].includes(
+                  {["sold", "finalizado", "finalized"].includes(
                     listing.status,
                   ) && (
                     <button

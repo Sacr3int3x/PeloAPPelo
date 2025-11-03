@@ -75,7 +75,7 @@ function HeaderContent({ showNav }) {
               alt="peloAPPelo"
               className="header-brand-img"
               loading="lazy"
-              style={{ width: 32, height: 32, objectFit: "contain" }}
+              style={{ width: 40, height: 40, objectFit: "contain" }}
             />
             <span className="header-brand-text">peloAPPelo</span>
           </NavLink>

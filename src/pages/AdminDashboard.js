@@ -16,6 +16,7 @@ import {
   updateAdminUser,
   deleteAdminListing,
   pauseAdminListing,
+  unpauseAdminListing,
 } from "../services/adminApi";
 import "../styles/AdminDashboard.css";
 
@@ -28,14 +29,6 @@ const tabs = [
   { id: "verifications", label: "Verificaciones" },
   { id: "audit", label: "Auditoría" },
   { id: "raw", label: "Datos crudos" },
-];
-
-const statusOptions = [
-  { value: "active", label: "Activa" },
-  { value: "paused", label: "Pausada" },
-  { value: "sold", label: "Vendida" },
-  { value: "suspended", label: "Suspendida" },
-  { value: "removed", label: "Removida" },
 ];
 
 const roleOptions = [
@@ -170,7 +163,7 @@ function useAsyncState(initialState = null) {
 function AdminDashboard() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("listings");
 
   const {
     state: overview,
@@ -236,10 +229,6 @@ function AdminDashboard() {
   const [verificationLoading, setVerificationLoading] = useState(false);
   const [verificationError, setVerificationError] = useState("");
 
-  const [notificationFilters, setNotificationFilters] = useState({
-    page: 0,
-    pageSize: 10,
-  });
   const [notificationData, setNotificationData] = useState({
     list: [],
     total: 0,
@@ -312,6 +301,7 @@ function AdminDashboard() {
         owner: listingOwner,
         limit: listingPageSize,
         offset: listingPage * listingPageSize,
+        includeModerated: true,
       });
       setListingsData({
         list: response.items || [],
@@ -629,16 +619,32 @@ function AdminDashboard() {
 
     try {
       await pauseAdminListing(token, listingId);
-      setListingsData((prev) => ({
-        ...prev,
-        list: prev.list.map((item) =>
-          item.id === listingId ? { ...item, status: "paused" } : item,
-        ),
-      }));
+      await loadListings(); // Refresh the list from server
       toast.success("Publicación pausada exitosamente");
     } catch (error) {
       setListingsError(error?.message || "No se pudo pausar la publicación.");
       toast.error(error?.message || "Error al pausar la publicación");
+    }
+  };
+
+  const handleUnpauseListing = async (listingId, listingName) => {
+    if (
+      !window.confirm(
+        `¿Estás seguro de que quieres reactivar la publicación "${listingName}"?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await unpauseAdminListing(token, listingId);
+      await loadListings(); // Refresh the list from server
+      toast.success("Publicación reactivada exitosamente");
+    } catch (error) {
+      setListingsError(
+        error?.message || "No se pudo reactivar la publicación.",
+      );
+      toast.error(error?.message || "Error al reactivar la publicación");
     }
   };
 
@@ -1031,6 +1037,15 @@ function AdminDashboard() {
                       onClick={() => handlePauseListing(item.id, item.name)}
                     >
                       Pausar
+                    </button>
+                  )}
+                  {item.status === "paused" && (
+                    <button
+                      type="button"
+                      className="btn success sm"
+                      onClick={() => handleUnpauseListing(item.id, item.name)}
+                    >
+                      Reactivar
                     </button>
                   )}
                   <button

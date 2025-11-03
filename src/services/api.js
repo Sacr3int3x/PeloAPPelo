@@ -27,7 +27,8 @@ export async function apiRequest(
 ) {
   const url = buildUrl(path);
   const hasBody = data !== undefined && data !== null;
-  const headers = buildHeaders(token, hasBody && !isFormData);
+  const hasRequestBody = hasBody && method !== "GET";
+  const headers = buildHeaders(token, hasRequestBody && !isFormData);
 
   // Si es FormData, no incluir Content-Type, el navegador lo establecerá automáticamente
   if (isFormData) {
@@ -37,7 +38,7 @@ export async function apiRequest(
   const response = await fetch(url, {
     method,
     headers,
-    body: body || (hasBody ? JSON.stringify(data) : undefined),
+    body: body || (hasRequestBody ? JSON.stringify(data) : undefined),
     credentials: "include",
     signal,
   });

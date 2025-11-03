@@ -17,7 +17,6 @@ import BottomNav from "./components/BottomNav/BottomNav";
 import ScrollToTop from "./components/ScrollToTop";
 import { useData } from "./context/DataContext";
 import LoadingPage from "./pages/LoadingPage";
-import "./styles/theme.css";
 import "./styles/animations.css";
 
 // Context Providers
